@@ -1,0 +1,184 @@
+id,nic,activity,result,activity_time,name,jobrole
+1,200229004669,Login,Success,2025-05-08 22:59:28,modiwixrezrcre,Admin
+2,200229004669,Logged out,Success,2025-05-08 23:00:43,modiwixrezrcre,Admin
+3,200229004669,Login,Success,2025-05-08 23:07:02,modiwixrezrcre,Admin
+4,200229004669,Auto-backup database,Failed,2025-05-08 23:07:37,modiwixrezrcre,Admin
+5,200229004669,Auto-backup database,Failed,2025-05-08 23:08:06,modiwixrezrcre,Admin
+6,200229004669,Auto-backup database,Failed,2025-05-08 23:08:36,modiwixrezrcre,Admin
+7,200229004669,Logged out,Success,2025-05-08 23:08:51,modiwixrezrcre,Admin
+8,200229004669,Login,Success,2025-05-08 23:30:40,modiwixrezrcre,Admin
+9,200229004669,Auto-backup database,Success,2025-05-08 23:31:14,modiwixrezrcre,Admin
+10,200229004669,Attempted to backup database,Success,2025-05-08 23:31:27,modiwixrezrcre,Admin
+11,200229004669,Logged out,Success,2025-05-08 23:31:31,modiwixrezrcre,Admin
+12,200229004669,Login,Success,2025-05-08 23:41:52,modiwixrezrcre,Admin
+13,200229004669,Auto-backup database,Success,2025-05-08 23:42:26,modiwixrezrcre,Admin
+14,200229004669,Attempted to add new employee: xfefr (200229005467),Success,2025-05-08 23:42:52,modiwixrezrcre,Admin
+15,200229004669,Auto-backup database,Success,2025-05-08 23:42:56,modiwixrezrcre,Admin
+16,200229004669,Auto-backup database,Success,2025-05-08 23:43:26,modiwixrezrcre,Admin
+17,200229004669,Auto-backup database,Success,2025-05-08 23:43:56,modiwixrezrcre,Admin
+18,200229004669,Auto-backup database,Success,2025-05-08 23:44:26,modiwixrezrcre,Admin
+19,200229004669,Attempted to add or update customer moirmxpmxoijr( 200229009086),Failed,2025-05-08 23:44:45,modiwixrezrcre,Admin
+20,200229004669,Auto-backup database,Success,2025-05-08 23:44:56,modiwixrezrcre,Admin
+21,200229004669,Auto-backup database,Success,2025-05-08 23:45:26,modiwixrezrcre,Admin
+22,200229004669,Auto-backup database,Success,2025-05-08 23:45:56,modiwixrezrcre,Admin
+23,200229004669,Auto-backup database,Success,2025-05-08 23:46:26,modiwixrezrcre,Admin
+24,200229004669,Login,Success,2025-05-08 23:59:19,modiwixrezrcre,Admin
+25,200229004669,Auto-backup database,Success,2025-05-08 23:59:53,modiwixrezrcre,Admin
+26,200229004669,Auto-backup database,Success,2025-05-09 00:00:23,modiwixrezrcre,Admin
+27,200229004669,Auto-backup database,Success,2025-05-09 00:00:53,modiwixrezrcre,Admin
+28,200229004669,Suggested price for room 001,Success,2025-05-09 00:00:55,modiwixrezrcre,Admin
+29,200229004669,Auto-backup database,Success,2025-05-09 00:01:23,modiwixrezrcre,Admin
+30,200229004669,Attempted to add room ( Room no: 021),Success,2025-05-09 00:01:50,modiwixrezrcre,Admin
+31,200229004669,Login,Success,2025-05-09 00:31:34,modiwixrezrcre,Admin
+32,200229004669,Auto-backup database,Success,2025-05-09 00:32:08,modiwixrezrcre,Admin
+33,200229004669,Attempted to search room ( Room no: 018),Success,2025-05-09 00:32:29,modiwixrezrcre,Admin
+34,200229004669,Auto-backup database,Success,2025-05-09 00:32:38,modiwixrezrcre,Admin
+35,200229004669,Auto-backup database,Success,2025-05-09 00:33:08,modiwixrezrcre,Admin
+36,200229004669,Auto-backup database,Success,2025-05-09 00:33:38,modiwixrezrcre,Admin
+37,200229004669,Attempted to add customer fcrfmofiec( 200229004563),Success,2025-05-09 00:33:53,modiwixrezrcre,Admin
+38,200229004669,Auto-backup database,Success,2025-05-09 00:34:08,modiwixrezrcre,Admin
+39,200229004669,Auto-backup database,Success,2025-05-09 00:34:38,modiwixrezrcre,Admin
+40,200229004669,Attempted to genarate customer report,Success,2025-05-09 00:35:02,modiwixrezrcre,Admin
+41,200229004669,Auto-backup database,Success,2025-05-09 00:35:08,modiwixrezrcre,Admin
+42,200229004669,Attempted to generate order details report,Success,2025-05-09 00:35:17,modiwixrezrcre,Admin
+43,200229004669,Attempted to generate inventory report,Success,2025-05-09 00:35:30,modiwixrezrcre,Admin
+44,200229004669,Auto-backup database,Success,2025-05-09 00:35:38,modiwixrezrcre,Admin
+45,200229004669,Auto-backup database,Success,2025-05-09 00:36:08,modiwixrezrcre,Admin
+46,200229004669,Auto-backup database,Success,2025-05-09 00:36:38,modiwixrezrcre,Admin
+47,200229004669,Auto-backup database,Success,2025-05-09 00:37:08,modiwixrezrcre,Admin
+48,200229004669,Auto-backup database,Success,2025-05-09 00:37:38,modiwixrezrcre,Admin
+49,200229004669,Auto-backup database,Success,2025-05-09 00:38:08,modiwixrezrcre,Admin
+50,200229004669,Auto-backup database,Success,2025-05-09 00:38:38,modiwixrezrcre,Admin
+51,200229004669,Auto-backup database,Success,2025-05-09 00:39:08,modiwixrezrcre,Admin
+52,200229004669,Auto-backup database,Success,2025-05-09 00:39:38,modiwixrezrcre,Admin
+53,200229004669,Auto-backup database,Success,2025-05-09 00:40:08,modiwixrezrcre,Admin
+54,200229004669,Attempted to generate inventory report,Success,2025-05-09 00:40:31,modiwixrezrcre,Admin
+55,200229004669,Auto-backup database,Success,2025-05-09 00:40:38,modiwixrezrcre,Admin
+56,200229004669,Auto-backup database,Success,2025-05-09 00:41:08,modiwixrezrcre,Admin
+57,200229004669,Auto-backup database,Success,2025-05-09 00:41:38,modiwixrezrcre,Admin
+58,200229004669,Auto-backup database,Success,2025-05-09 00:42:08,modiwixrezrcre,Admin
+59,200229004669,Auto-backup database,Success,2025-05-09 00:42:39,modiwixrezrcre,Admin
+60,200229004669,Auto-backup database,Success,2025-05-09 00:43:08,modiwixrezrcre,Admin
+61,200229004669,Auto-backup database,Success,2025-05-09 00:43:38,modiwixrezrcre,Admin
+62,200229004669,Auto-backup database,Success,2025-05-09 00:44:08,modiwixrezrcre,Admin
+63,200229004669,Auto-backup database,Success,2025-05-09 00:44:38,modiwixrezrcre,Admin
+64,200229004669,Auto-backup database,Success,2025-05-09 00:45:08,modiwixrezrcre,Admin
+65,200229004669,Auto-backup database,Success,2025-05-09 00:45:38,modiwixrezrcre,Admin
+66,200229004669,Auto-backup database,Success,2025-05-09 00:46:09,modiwixrezrcre,Admin
+67,200229004669,Auto-backup database,Success,2025-05-09 00:46:39,modiwixrezrcre,Admin
+68,200229004669,Auto-backup database,Success,2025-05-09 00:47:08,modiwixrezrcre,Admin
+69,200229004669,Logged out,Success,2025-05-09 00:47:19,modiwixrezrcre,Admin
+70,200229004669,Login,Success,2025-05-09 01:23:53,modiwixrezrcre,Admin
+71,200229004669,Auto-backup database,Success,2025-05-09 01:24:27,modiwixrezrcre,Admin
+72,200229004669,Attempted to backup database,Success,2025-05-09 01:24:35,modiwixrezrcre,Admin
+73,200229004669,Attempted to generate activity log report,Success,2025-05-09 01:24:57,modiwixrezrcre,Admin
+74,200229004669,Auto-backup database,Success,2025-05-09 01:24:58,modiwixrezrcre,Admin
+75,200229004669,Auto-backup database,Success,2025-05-09 01:25:27,modiwixrezrcre,Admin
+76,200229004669,Attempted to order item from inventory,Success,2025-05-09 01:25:34,modiwixrezrcre,Admin
+77,200229004669,Attempted to generate order details report,Success,2025-05-09 01:25:38,modiwixrezrcre,Admin
+78,200229004669,Auto-backup database,Success,2025-05-09 01:25:57,modiwixrezrcre,Admin
+79,200229004669,Auto-backup database,Success,2025-05-09 01:26:27,modiwixrezrcre,Admin
+80,200229004669,Attempted to add checkin: fcrfmofiec ( Customer ID:1),Success,2025-05-09 01:26:55,modiwixrezrcre,Admin
+81,200229004669,Auto-backup database,Success,2025-05-09 01:26:57,modiwixrezrcre,Admin
+82,200229004669,Attempted to generate checkin report,Success,2025-05-09 01:27:12,modiwixrezrcre,Admin
+83,200229004669,Auto-backup database,Success,2025-05-09 01:27:27,modiwixrezrcre,Admin
+84,200229004669,Attempted to add checkout:( Customer ID:1),Success,2025-05-09 01:27:32,modiwixrezrcre,Admin
+85,200229004669,Attempted to generate checkout report,Success,2025-05-09 01:27:35,modiwixrezrcre,Admin
+86,200229004669,Auto-backup database,Success,2025-05-09 01:27:57,modiwixrezrcre,Admin
+87,200229004669,Attempted to order item using batch form from inventory,Success,2025-05-09 01:28:22,modiwixrezrcre,Admin
+88,200229004669,Auto-backup database,Success,2025-05-09 01:28:27,modiwixrezrcre,Admin
+89,200229004669,Attempted to generate order details report,Success,2025-05-09 01:28:30,modiwixrezrcre,Admin
+90,200229004669,Auto-backup database,Success,2025-05-09 01:28:57,modiwixrezrcre,Admin
+91,200229004669,Auto-backup database,Success,2025-05-09 01:29:27,modiwixrezrcre,Admin
+92,200229004669,Attempted to add new item through batch insert.,Failed,2025-05-09 01:29:37,modiwixrezrcre,Admin
+93,200229004669,Auto-backup database,Success,2025-05-09 01:29:57,modiwixrezrcre,Admin
+94,200229004669,Auto-backup database,Success,2025-05-09 01:30:27,modiwixrezrcre,Admin
+95,200229004669,Login,Success,2025-05-09 01:30:36,modiwixrezrcre,Admin
+96,200229004669,Attempted to add new item through batch insert.,Success,2025-05-09 01:30:53,modiwixrezrcre,Admin
+97,200229004669,Auto-backup database,Success,2025-05-09 01:30:57,modiwixrezrcre,Admin
+98,200229004669,Auto-backup database,Success,2025-05-09 01:31:11,modiwixrezrcre,Admin
+99,200229004669,Attempted to delete item: T56 (Accessories),Success,2025-05-09 01:31:17,modiwixrezrcre,Admin
+100,200229004669,Auto-backup database,Success,2025-05-09 01:31:27,modiwixrezrcre,Admin
+101,200229004669,Auto-backup database,Success,2025-05-09 01:31:41,modiwixrezrcre,Admin
+102,200229004669,Auto-backup database,Success,2025-05-09 01:31:57,modiwixrezrcre,Admin
+103,200229004669,Auto-backup database,Success,2025-05-09 01:32:11,modiwixrezrcre,Admin
+104,200229004669,Auto-backup database,Success,2025-05-09 01:32:27,modiwixrezrcre,Admin
+105,200229004669,Auto-backup database,Success,2025-05-09 01:32:41,modiwixrezrcre,Admin
+106,200229004669,Auto-backup database,Success,2025-05-09 01:32:57,modiwixrezrcre,Admin
+107,200229004669,Attempted to generate inventory report,Success,2025-05-09 01:33:04,modiwixrezrcre,Admin
+108,200229004669,Auto-backup database,Success,2025-05-09 01:33:11,modiwixrezrcre,Admin
+109,200229004669,Auto-backup database,Success,2025-05-09 01:33:27,modiwixrezrcre,Admin
+110,200229004669,Attempted to search room type,Success,2025-05-09 01:33:39,modiwixrezrcre,Admin
+111,200229004669,Attempted to search room type,Success,2025-05-09 01:33:39,modiwixrezrcre,Admin
+112,200229004669,Auto-backup database,Success,2025-05-09 01:33:41,modiwixrezrcre,Admin
+113,200229004669,Attempted to search room type,Success,2025-05-09 01:33:56,modiwixrezrcre,Admin
+114,200229004669,Attempted to search room type,Success,2025-05-09 01:33:57,modiwixrezrcre,Admin
+115,200229004669,Attempted to search room type,Success,2025-05-09 01:33:57,modiwixrezrcre,Admin
+116,200229004669,Auto-backup database,Success,2025-05-09 01:33:57,modiwixrezrcre,Admin
+117,200229004669,Attempted to search room type,Success,2025-05-09 01:33:57,modiwixrezrcre,Admin
+118,200229004669,Attempted to search room type,Success,2025-05-09 01:33:58,modiwixrezrcre,Admin
+119,200229004669,Attempted to search room type,Success,2025-05-09 01:34:03,modiwixrezrcre,Admin
+120,200229004669,Auto-backup database,Success,2025-05-09 01:34:11,modiwixrezrcre,Admin
+121,200229004669,Auto-backup database,Success,2025-05-09 01:34:27,modiwixrezrcre,Admin
+122,200229004669,Auto-backup database,Success,2025-05-09 01:34:41,modiwixrezrcre,Admin
+123,200229004669,Attempted to delete room ( Room no: 021),Success,2025-05-09 01:34:41,modiwixrezrcre,Admin
+124,200229004669,Attempted to generate Room availability report,Success,2025-05-09 01:34:48,modiwixrezrcre,Admin
+125,200229004669,Auto-backup database,Success,2025-05-09 01:34:57,modiwixrezrcre,Admin
+126,200229004669,Auto-backup database,Success,2025-05-09 01:35:11,modiwixrezrcre,Admin
+127,200229004669,Auto-backup database,Success,2025-05-09 01:35:27,modiwixrezrcre,Admin
+128,200229004669,Auto-backup database,Success,2025-05-09 01:35:41,modiwixrezrcre,Admin
+129,200229004669,Attempted to add customer iumhochricue( 200229032149),Success,2025-05-09 01:35:48,modiwixrezrcre,Admin
+130,200229004669,Auto-backup database,Success,2025-05-09 01:35:57,modiwixrezrcre,Admin
+131,200229004669,Attempted to genarate customer report,Success,2025-05-09 01:35:59,modiwixrezrcre,Admin
+132,200229004669,Auto-backup database,Success,2025-05-09 01:36:11,modiwixrezrcre,Admin
+133,200229004669,Auto-backup database,Success,2025-05-09 01:36:27,modiwixrezrcre,Admin
+134,200229004669,Attempted to add room ( Room no: 021),Success,2025-05-09 01:36:30,modiwixrezrcre,Admin
+135,200229004669,Auto-backup database,Success,2025-05-09 01:36:41,modiwixrezrcre,Admin
+136,200229004669,Attempted to delete room ( Room no: 021),Success,2025-05-09 01:36:45,modiwixrezrcre,Admin
+137,200229004669,Auto-backup database,Success,2025-05-09 01:36:57,modiwixrezrcre,Admin
+138,200229004669,Auto-backup database,Success,2025-05-09 01:37:11,modiwixrezrcre,Admin
+139,200229004669,Auto-backup database,Success,2025-05-09 01:37:27,modiwixrezrcre,Admin
+140,200229004669,Attempted to add event ( Event no: 1),Failed,2025-05-09 01:37:40,modiwixrezrcre,Admin
+141,200229004669,Auto-backup database,Success,2025-05-09 01:37:41,modiwixrezrcre,Admin
+142,200229004669,Attempted to add event ( Event no: 1),Success,2025-05-09 01:37:45,modiwixrezrcre,Admin
+143,200229004669,Auto-backup database,Success,2025-05-09 01:37:57,modiwixrezrcre,Admin
+144,200229004669,Auto-backup database,Success,2025-05-09 01:38:11,modiwixrezrcre,Admin
+145,200229004669,Attempted to genarate event report,Success,2025-05-09 01:38:14,modiwixrezrcre,Admin
+146,200229004669,Auto-backup database,Success,2025-05-09 01:38:27,modiwixrezrcre,Admin
+147,200229004669,Auto-backup database,Success,2025-05-09 01:38:41,modiwixrezrcre,Admin
+148,200229004669,Auto-backup database,Success,2025-05-09 01:38:57,modiwixrezrcre,Admin
+149,200229004669,Attempted to add new employee: meifcoxjirexfe (200229678969),Success,2025-05-09 01:39:02,modiwixrezrcre,Admin
+150,200229004669,Auto-backup database,Success,2025-05-09 01:39:11,modiwixrezrcre,Admin
+151,200229004669,Attempted to generate employee report,Success,2025-05-09 01:39:19,modiwixrezrcre,Admin
+152,200229004669,Auto-backup database,Success,2025-05-09 01:39:27,modiwixrezrcre,Admin
+153,200229004669,Auto-backup database,Success,2025-05-09 01:39:41,modiwixrezrcre,Admin
+154,200229004669,Attempted to search employee ( NIC: 200229678969),Success,2025-05-09 01:39:42,modiwixrezrcre,Admin
+155,200229004669,Attempt to update employee: meifcoxjirexfe (200229678969),Success,2025-05-09 01:39:56,modiwixrezrcre,Admin
+156,200229004669,Auto-backup database,Success,2025-05-09 01:39:57,modiwixrezrcre,Admin
+157,200229004669,Attempted to search employee ( NIC: 200229678969),Success,2025-05-09 01:40:05,modiwixrezrcre,Admin
+158,200229004669,Auto-backup database,Success,2025-05-09 01:40:11,modiwixrezrcre,Admin
+159,200229004669,Attempt to delete employee: meifcoxjirexfe (200229678969),Success,2025-05-09 01:40:12,modiwixrezrcre,Admin
+160,200229004669,Auto-backup database,Success,2025-05-09 01:40:27,modiwixrezrcre,Admin
+161,200229004669,Auto-backup database,Success,2025-05-09 01:40:41,modiwixrezrcre,Admin
+162,200229004669,Auto-backup database,Success,2025-05-09 01:40:57,modiwixrezrcre,Admin
+163,200229004669,Auto-backup database,Success,2025-05-09 01:41:11,modiwixrezrcre,Admin
+164,200229004669,Logged out,Success,2025-05-09 01:41:26,modiwixrezrcre,Admin
+165,200229004669,Auto-backup database,Success,2025-05-09 01:41:27,modiwixrezrcre,Admin
+166,200229004669,Auto-backup database,Success,2025-05-09 01:41:57,modiwixrezrcre,Admin
+167,200229004669,Auto-backup database,Success,2025-05-09 01:42:27,modiwixrezrcre,Admin
+168,200229004669,Auto-backup database,Success,2025-05-09 01:42:57,modiwixrezrcre,Admin
+169,200229004669,Auto-backup database,Success,2025-05-09 01:43:27,modiwixrezrcre,Admin
+170,200229004669,Auto-backup database,Success,2025-05-09 01:43:57,modiwixrezrcre,Admin
+171,200229004669,Auto-backup database,Success,2025-05-09 01:44:27,modiwixrezrcre,Admin
+172,200229004669,Auto-backup database,Success,2025-05-09 01:44:57,modiwixrezrcre,Admin
+173,200229004669,Auto-backup database,Success,2025-05-09 01:45:27,modiwixrezrcre,Admin
+174,200229004669,Auto-backup database,Success,2025-05-09 01:45:57,modiwixrezrcre,Admin
+175,200229004669,Auto-backup database,Success,2025-05-09 01:46:27,modiwixrezrcre,Admin
+176,200229004669,Auto-backup database,Success,2025-05-09 01:46:57,modiwixrezrcre,Admin
+177,200229004669,Login,Success,2025-05-09 08:27:48,modiwixrezrcre,Admin
+178,200229004669,Attempted to generate inventory report,Success,2025-05-09 08:28:05,modiwixrezrcre,Admin
+179,200229004669,Auto-backup database,Success,2025-05-09 08:28:23,modiwixrezrcre,Admin
+180,200229004669,Auto-backup database,Success,2025-05-09 08:28:53,modiwixrezrcre,Admin
+181,200229004669,Auto-backup database,Success,2025-05-09 08:29:23,modiwixrezrcre,Admin
+182,200229004669,Auto-backup database,Success,2025-05-09 08:29:53,modiwixrezrcre,Admin
+183,200229004669,Auto-backup database,Success,2025-05-09 08:30:23,modiwixrezrcre,Admin

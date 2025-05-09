@@ -1,0 +1,21 @@
+roomnumber,availability,cleaning_status,price,bed_type
+001,Available,Cleaned,35000,Double Bed
+002,Available,Cleaned,35000,Double Bed
+003,Available,Cleaned,35000,Double Bed
+004,Not yet,Dirty,35000,Double Bed
+005,Not yet,Dirty,35000,Double Bed
+006,Not yet,Cleaned,35000,Double Bed
+007,Available,Cleaned,35000,Double Bed
+008,Available,Cleaned,35000,Double Bed
+009,Not yet,Cleaned,35000,Double Bed
+010,Available,Cleaned,35000,Double Bed
+011,Not yet,Cleaned,25000,Single Bed
+012,Available,Cleaned,25000,Single Bed
+013,Available,Cleaned,25000,Single Bed
+014,Not yet,Dirty,25000,Single Bed
+015,Not yet,Dirty,25000,Single Bed
+016,Not yet,Cleaned,25000,Single Bed
+017,Not yet,Cleaned,25000,Single Bed
+018,Available,Cleaned,25000,Single Bed
+019,Not yet,Cleaned,25000,Single Bed
+020,Available,Cleaned,25000,Single Bed
