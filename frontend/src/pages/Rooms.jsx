@@ -89,7 +89,7 @@ export default function Rooms() {
               <p className="text-xs text-navy-700 mb-1">{r.room_type}</p>
               <p className="font-mono text-sm">LKR {Number(r.price_per_night).toLocaleString()}/night</p>
               <button
-                className="text-rust text-xs mt-3 hover:underline"
+                className="btn btn-sm btn-danger mt-3"
                 onClick={(e) => { e.stopPropagation(); handleDelete(r) }}
               >
                 Delete

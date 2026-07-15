@@ -10,6 +10,7 @@ const EMPTY = { full_name: '', email: '', phone: '', nic: '', address: '', gende
 export default function Guests() {
   const [guests, setGuests] = useState([])
   const [search, setSearch] = useState('')
+  const [genderFilter, setGenderFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [editingId, setEditingId] = useState(null)
@@ -56,17 +57,26 @@ export default function Guests() {
     load()
   }
 
-  const filtered = guests.filter((g) =>
-    `${g.full_name} ${g.email} ${g.phone} ${g.nic}`.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = guests.filter((g) => {
+    const haystack = `${g.full_name} ${g.email} ${g.phone} ${g.nic}`.toLowerCase()
+    const matchesSearch = haystack.includes(search.toLowerCase())
+    const matchesGender = genderFilter === 'All' || g.gender === genderFilter
+    return matchesSearch && matchesGender
+  })
 
   return (
     <Layout
       title="Guests"
       subtitle="Guest records and contact details"
-      actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Guest</button>}
     >
-      <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…" />
+      <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…">
+        <select className="input max-w-[140px]" value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}>
+          <option value="All">All genders</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </Toolbar>
 
       <div className="card overflow-x-auto p-0">
         <table className="data-table">
@@ -87,9 +97,11 @@ export default function Guests() {
                 <td>{g.phone || '—'}</td>
                 <td className="font-mono text-xs">{g.nic || '—'}</td>
                 <td>{g.gender}</td>
-                <td className="text-right space-x-2">
-                  <button className="text-teal-600 text-sm hover:underline" onClick={() => openEdit(g)}>Edit</button>
-                  <button className="text-rust text-sm hover:underline" onClick={() => handleDelete(g)}>Delete</button>
+                <td className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <button className="btn btn-sm btn-secondary" onClick={() => openEdit(g)}>Edit</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(g)}>Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}

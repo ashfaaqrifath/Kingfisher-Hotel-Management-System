@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
+import Toolbar from '../components/Toolbar'
 import { supabase } from '../lib/supabaseClient'
 
 export default function ActivityLog() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [actionFilter, setActionFilter] = useState('All')
 
   useEffect(() => {
     async function load() {
@@ -19,8 +22,24 @@ export default function ActivityLog() {
     load()
   }, [])
 
+  const actionOptions = ['All', ...new Set(logs.map((l) => l.action).filter(Boolean))]
+  const filteredLogs = logs.filter((l) => {
+    const haystack = `${l.profiles?.full_name || ''} ${l.action} ${l.details}`.toLowerCase()
+    const matchesSearch = haystack.includes(search.toLowerCase())
+    const matchesAction = actionFilter === 'All' || l.action === actionFilter
+    return matchesSearch && matchesAction
+  })
+
   return (
     <Layout title="Activity Log" subtitle="Audit trail of all system actions (admin only)">
+      <Toolbar search={search} onSearch={setSearch} placeholder="Search user, action, or details…">
+        <select className="input max-w-[180px]" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+          {actionOptions.map((action) => (
+            <option key={action} value={action}>{action === 'All' ? 'All actions' : action}</option>
+          ))}
+        </select>
+      </Toolbar>
+
       <div className="card overflow-x-auto p-0">
         <table className="data-table">
           <thead>
@@ -28,10 +47,10 @@ export default function ActivityLog() {
           </thead>
           <tbody>
             {loading && <tr><td colSpan={4} className="text-center py-6 text-navy-700">Loading…</td></tr>}
-            {!loading && logs.length === 0 && (
-              <tr><td colSpan={4} className="text-center py-6 text-navy-700">No activity recorded yet.</td></tr>
+            {!loading && filteredLogs.length === 0 && (
+              <tr><td colSpan={4} className="text-center py-6 text-navy-700">No matching activity recorded.</td></tr>
             )}
-            {logs.map((l) => (
+            {filteredLogs.map((l) => (
               <tr key={l.id}>
                 <td className="font-mono text-xs">{new Date(l.created_at).toLocaleString()}</td>
                 <td>{l.profiles?.full_name || 'Unknown'}</td>

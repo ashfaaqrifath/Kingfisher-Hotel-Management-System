@@ -79,7 +79,7 @@ export default function Dashboard() {
   )
 
   return (
-    <Layout title="Dashboard" subtitle="Live overview of Kingfisher Beach Resort operations">
+    <Layout title="Dashboard" subtitle="Live overview of resort operations">
       {loading ? (
         <p className="text-navy-700">Loading dashboard…</p>
       ) : (

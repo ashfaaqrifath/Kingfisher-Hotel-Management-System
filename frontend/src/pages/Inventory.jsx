@@ -11,6 +11,7 @@ const EMPTY = { item_name: '', category: 'Linen', quantity: '', unit: 'pcs', low
 export default function Inventory() {
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('All')
   const [lowOnly, setLowOnly] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
@@ -58,6 +59,7 @@ export default function Inventory() {
 
   const filtered = items
     .filter((i) => `${i.item_name} ${i.category}`.toLowerCase().includes(search.toLowerCase()))
+    .filter((i) => categoryFilter === 'All' || i.category === categoryFilter)
     .filter((i) => !lowOnly || i.quantity <= i.low_stock_threshold)
 
   return (
@@ -67,6 +69,10 @@ export default function Inventory() {
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Item</button>}
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search item or category…">
+        <select className="input max-w-[160px]" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <option value="All">All categories</option>
+          {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+        </select>
         <label className="flex items-center gap-2 text-sm text-navy-700">
           <input type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} />
           Low stock only
@@ -98,9 +104,11 @@ export default function Inventory() {
                       {low ? 'Low stock' : 'In stock'}
                     </span>
                   </td>
-                  <td className="text-right space-x-2">
-                    <button className="text-teal-600 text-sm hover:underline" onClick={() => openEdit(i)}>Edit</button>
-                    <button className="text-rust text-sm hover:underline" onClick={() => handleDelete(i)}>Delete</button>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <button className="btn btn-sm btn-secondary" onClick={() => openEdit(i)}>Edit</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(i)}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               )

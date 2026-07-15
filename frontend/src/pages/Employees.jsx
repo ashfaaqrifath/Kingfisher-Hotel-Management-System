@@ -12,6 +12,8 @@ const EMPTY = { full_name: '', email: '', phone: '', job_role: 'Reception', sala
 export default function Employees() {
   const [employees, setEmployees] = useState([])
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('All')
+  const [statusFilter, setStatusFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [editingId, setEditingId] = useState(null)
@@ -50,9 +52,13 @@ export default function Employees() {
     load()
   }
 
-  const filtered = employees.filter((e) =>
-    `${e.full_name} ${e.job_role} ${e.email}`.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = employees.filter((e) => {
+    const haystack = `${e.full_name} ${e.job_role} ${e.email}`.toLowerCase()
+    const matchesSearch = haystack.includes(search.toLowerCase())
+    const matchesRole = roleFilter === 'All' || e.job_role === roleFilter
+    const matchesStatus = statusFilter === 'All' || e.status === statusFilter
+    return matchesSearch && matchesRole && matchesStatus
+  })
 
   const statusBadge = (s) => ({
     Active: 'badge-available',
@@ -66,7 +72,16 @@ export default function Employees() {
       subtitle="Staff records, roles, and salary"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Employee</button>}
     >
-      <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, role, email…" />
+      <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, role, email…">
+        <select className="input max-w-[160px]" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+          <option value="All">All roles</option>
+          {JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+        </select>
+        <select className="input max-w-[160px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="All">All statuses</option>
+          {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+      </Toolbar>
 
       <div className="card overflow-x-auto p-0">
         <table className="data-table">
@@ -88,9 +103,11 @@ export default function Employees() {
                 <td className="font-mono">{Number(emp.salary).toLocaleString()}</td>
                 <td>{emp.hire_date}</td>
                 <td><span className={`badge ${statusBadge(emp.status)}`}>{emp.status}</span></td>
-                <td className="text-right space-x-2">
-                  <button className="text-teal-600 text-sm hover:underline" onClick={() => openEdit(emp)}>Edit</button>
-                  <button className="text-rust text-sm hover:underline" onClick={() => handleDelete(emp)}>Delete</button>
+                <td className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <button className="btn btn-sm btn-secondary" onClick={() => openEdit(emp)}>Edit</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(emp)}>Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}

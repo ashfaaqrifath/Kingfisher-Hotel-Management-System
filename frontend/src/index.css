@@ -3,58 +3,158 @@
 @tailwind utilities;
 
 body {
-  @apply bg-sand-100 text-navy-950 font-body antialiased;
+  background-color: #fbf7ec;
+  color: #0a1f33;
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4 {
-  @apply font-display;
+  font-family: "Space Grotesk", sans-serif;
 }
 
 /* Flat card — border only, no shadow gradients */
 .card {
-  @apply bg-white border border-sand-300 rounded p-5;
+  background-color: #ffffff;
+  border: 1px solid #d9d1bd;
+  border-radius: 15px;
+  padding: 1.25rem;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded text-sm font-medium
-         transition-colors duration-100 disabled:opacity-50 disabled:cursor-not-allowed;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 15px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  background-color: #0F2B46;
+  transition: color 0.1s ease, background-color 0.1s ease, border-color 0.1s ease;
 }
-.btn-primary { @apply bg-navy-900 text-white hover:bg-navy-800; }
-.btn-secondary { @apply bg-white text-navy-900 border border-sand-300 hover:bg-sand-200; }
-.btn-danger { @apply bg-rust text-white hover:opacity-90; }
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+.btn-primary:hover {
+  background-color: #163c5e;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: #0f2b46;
+  border: 1px solid #e2ddd1;
+}
+
+.btn-secondary:hover {
+  background-color: #efebe2;
+}
+
+.btn-danger {
+  background-color: #b3432b;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
 
 .input {
-  @apply w-full border border-sand-300 rounded px-3 py-2 text-sm bg-white
-         focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500;
+  width: 100%;
+  border: 1px solid #e2ddd1;
+  border-radius: 15px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  background-color: #ffffff;
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(18, 149, 147, 0.25);
+  border-color: #129593;
 }
 
 .label {
-  @apply block text-xs font-medium text-navy-700 mb-1 uppercase tracking-wide;
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1f4e76;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .badge {
-  @apply inline-block px-2 py-0.5 rounded-sm text-xs font-medium tracking-wide;
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
-.badge-available { @apply bg-moss/10 text-moss; }
-.badge-occupied { @apply bg-rust/10 text-rust; }
-.badge-maintenance { @apply bg-amber/10 text-amber; }
 
-table.data-table { @apply w-full text-sm border-collapse; }
+.badge-available {
+  background-color: rgba(31, 138, 85, 0.1);
+  color: #1f8a55;
+}
+
+.badge-occupied {
+  background-color: rgba(179, 67, 43, 0.1);
+  color: #b3432b;
+}
+
+.badge-maintenance {
+  background-color: rgba(201, 122, 43, 0.1);
+  color: #c97a2b;
+}
+
+table.data-table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
 table.data-table th {
-  @apply text-left text-xs uppercase tracking-wide text-navy-700 font-semibold
-         border-b-2 border-navy-900 py-2 px-3;
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1f4e76;
+  font-weight: 600;
+  border-bottom: 2px solid #0f2b46;
+  padding: 0.5rem 0.75rem;
 }
+
 table.data-table td {
-  @apply border-b border-sand-300 py-2.5 px-3;
+  border-bottom: 1px solid #e2ddd1;
+  padding: 0.625rem 0.75rem;
 }
-table.data-table tbody tr:hover { @apply bg-sand-200; }
 
-.stat-number { @apply font-mono text-3xl font-semibold text-navy-950; }
+table.data-table tbody tr:hover {
+  background-color: #efebe2;
+}
 
-::selection { background-color: #0E7C7B33; }
+.stat-number {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #0a1f33;
+}
+
+::selection {
+  background-color: rgba(14, 124, 123, 0.2);
+}
 
 /* Keyboard focus visibility */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid #0E7C7B;
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #0e7c7b;
   outline-offset: 2px;
 }

@@ -6,7 +6,20 @@ import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
 
 const STATUSES = ['Booked', 'Checked In', 'Checked Out', 'Cancelled']
-const EMPTY = { guest_id: '', room_id: '', check_in: '', check_out: '', status: 'Booked', total_amount: '' }
+const EMPTY = {
+  guest_id: '',
+  full_name: '',
+  email: '',
+  phone: '',
+  nic: '',
+  address: '',
+  gender: 'Male',
+  room_id: '',
+  check_in: '',
+  check_out: '',
+  status: 'Booked',
+  total_amount: '',
+}
 
 const STATUS_BADGE = {
   Booked: 'badge-maintenance',
@@ -45,7 +58,7 @@ export default function Bookings() {
 
   useEffect(() => { load() }, [])
 
-  function openCreate() { setForm(EMPTY); setModalOpen(true) }
+  function openCreate() { setForm({ ...EMPTY }); setModalOpen(true) }
 
   function calcTotal(roomId, checkIn, checkOut) {
     const room = rooms.find((r) => r.id === roomId)
@@ -61,7 +74,41 @@ export default function Bookings() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const payload = { ...form, total_amount: Number(form.total_amount) || 0 }
+
+    let guestId = form.guest_id || ''
+
+    if (!guestId) {
+      const guestPayload = {
+        full_name: form.full_name?.trim(),
+        email: form.email?.trim(),
+        phone: form.phone?.trim(),
+        nic: form.nic?.trim(),
+        address: form.address?.trim(),
+        gender: form.gender,
+      }
+
+      const { data: createdGuest, error: guestError } = await supabase
+        .from('guests')
+        .insert(guestPayload)
+        .select('id')
+        .single()
+
+      if (guestError) {
+        console.error('Failed to create guest', guestError)
+        return
+      }
+      guestId = createdGuest?.id || ''
+    }
+
+    const payload = {
+      guest_id: guestId,
+      room_id: form.room_id,
+      check_in: form.check_in,
+      check_out: form.check_out,
+      status: form.status,
+      total_amount: Number(form.total_amount) || 0,
+    }
+
     await supabase.from('bookings').insert(payload)
     await logActivity('Created booking', `Room ${rooms.find(r => r.id === form.room_id)?.room_number}`)
     setModalOpen(false)
@@ -115,16 +162,18 @@ export default function Bookings() {
                 <td>{b.check_out}</td>
                 <td className="font-mono">{Number(b.total_amount).toLocaleString()}</td>
                 <td><span className={`badge ${STATUS_BADGE[b.status]}`}>{b.status}</span></td>
-                <td className="text-right space-x-2 whitespace-nowrap">
-                  {b.status === 'Booked' && (
-                    <button className="text-teal-600 text-sm hover:underline" onClick={() => updateStatus(b, 'Checked In')}>Check in</button>
-                  )}
-                  {b.status === 'Checked In' && (
-                    <button className="text-teal-600 text-sm hover:underline" onClick={() => updateStatus(b, 'Checked Out')}>Check out</button>
-                  )}
-                  {['Booked', 'Checked In'].includes(b.status) && (
-                    <button className="text-rust text-sm hover:underline" onClick={() => updateStatus(b, 'Cancelled')}>Cancel</button>
-                  )}
+                <td className="text-right whitespace-nowrap">
+                  <div className="flex justify-end gap-2">
+                    {b.status === 'Booked' && (
+                      <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b, 'Checked In')}>Check in</button>
+                    )}
+                    {b.status === 'Checked In' && (
+                      <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b, 'Checked Out')}>Check out</button>
+                    )}
+                    {['Booked', 'Checked In'].includes(b.status) && (
+                      <button className="btn btn-sm btn-danger" onClick={() => updateStatus(b, 'Cancelled')}>Cancel</button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -132,40 +181,97 @@ export default function Bookings() {
         </table>
       </div>
 
-      <Modal open={modalOpen} title="New Booking" onClose={() => setModalOpen(false)}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label">Guest</label>
-            <select required className="input" value={form.guest_id} onChange={(e) => setForm({ ...form, guest_id: e.target.value })}>
-              <option value="">Select guest…</option>
-              {guests.map((g) => <option key={g.id} value={g.id}>{g.full_name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Room (available only)</label>
-            <select required className="input" value={form.room_id} onChange={(e) => handleRoomOrDateChange({ room_id: e.target.value })}>
-              <option value="">Select room…</option>
-              {availableRooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.room_number} — LKR {r.price_per_night.toLocaleString()}/night</option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Check-in</label>
-              <input type="date" required className="input" value={form.check_in} onChange={(e) => handleRoomOrDateChange({ check_in: e.target.value })} />
+      <Modal open={modalOpen} title="New Booking" onClose={() => setModalOpen(false)} width="max-w-5xl">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4">
+              <div className="border-b border-sand-300 pb-2">
+                <h4 className="font-semibold text-navy-950">Guest details</h4>
+                <p className="text-sm text-navy-700">Add a new guest here or choose an existing one.</p>
+              </div>
+
+              <div>
+                <label className="label">Existing guest (optional)</label>
+                <select className="input" value={form.guest_id} onChange={(e) => setForm({ ...form, guest_id: e.target.value })}>
+                  <option value="">New guest</option>
+                  {guests.map((g) => <option key={g.id} value={g.id}>{g.full_name}</option>)}
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Full name</label>
+                  <input required={!form.guest_id} className="input" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Email</label>
+                  <input type="email" required={!form.guest_id} className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Phone</label>
+                  <input required={!form.guest_id} className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">NIC</label>
+                  <input required={!form.guest_id} className="input" value={form.nic} onChange={(e) => setForm({ ...form, nic: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Gender</label>
+                  <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Address</label>
+                  <input required={!form.guest_id} className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="label">Check-out</label>
-              <input type="date" required className="input" value={form.check_out} onChange={(e) => handleRoomOrDateChange({ check_out: e.target.value })} />
+
+            <div className="space-y-4">
+              <div className="border-b border-sand-300 pb-2">
+                <h4 className="font-semibold text-navy-950">Booking details</h4>
+                <p className="text-sm text-navy-700">Choose room and stay dates for this reservation.</p>
+              </div>
+
+              <div>
+                <label className="label">Room (available only)</label>
+                <select required className="input" value={form.room_id} onChange={(e) => handleRoomOrDateChange({ room_id: e.target.value })}>
+                  <option value="">Select room…</option>
+                  {availableRooms.map((r) => (
+                    <option key={r.id} value={r.id}>{r.room_number} — LKR {r.price_per_night.toLocaleString()}/night</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Check-in</label>
+                  <input type="date" required className="input" value={form.check_in} onChange={(e) => handleRoomOrDateChange({ check_in: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Check-out</label>
+                  <input type="date" required className="input" value={form.check_out} onChange={(e) => handleRoomOrDateChange({ check_out: e.target.value })} />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Total amount (LKR)</label>
+                <input type="number" min="0" className="input" value={form.total_amount} onChange={(e) => setForm({ ...form, total_amount: e.target.value })} />
+                <p className="text-xs text-navy-700 mt-1">Auto-calculated from room price × nights — edit if needed.</p>
+              </div>
             </div>
           </div>
-          <div>
-            <label className="label">Total amount (LKR)</label>
-            <input type="number" min="0" className="input" value={form.total_amount} onChange={(e) => setForm({ ...form, total_amount: e.target.value })} />
-            <p className="text-xs text-navy-700 mt-1">Auto-calculated from room price × nights — edit if needed.</p>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-sand-300">
             <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary">Create booking</button>
           </div>
