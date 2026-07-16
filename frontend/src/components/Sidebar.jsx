@@ -8,7 +8,6 @@ const links = [
   { to: '/guests', label: 'Guests', icon: '◍' },
   { to: '/employees', label: 'Employees', icon: '◎', adminOnly: true },
   { to: '/inventory', label: 'Inventory', icon: '◫' },
-  { to: '/reports', label: 'Reports', icon: '▥' },
   { to: '/activity-log', label: 'Activity Log', icon: '≡', adminOnly: true },
 ]
 

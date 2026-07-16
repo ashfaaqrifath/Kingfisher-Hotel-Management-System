@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
+import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
 
@@ -77,6 +78,28 @@ export default function Inventory() {
           <input type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} />
           Low stock only
         </label>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((i) => ({
+              Item: i.item_name,
+              Category: i.category,
+              Quantity: `${i.quantity} ${i.unit}`,
+              'Unit Price (LKR)': i.unit_price,
+              Status: i.quantity <= i.low_stock_threshold ? 'Low stock' : 'In stock',
+            }))
+            exportCSV(rows, 'inventory-report.csv')
+          }} disabled={filtered.length === 0}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((i) => ({
+              Item: i.item_name,
+              Category: i.category,
+              Quantity: `${i.quantity} ${i.unit}`,
+              'Unit Price (LKR)': i.unit_price,
+              Status: i.quantity <= i.low_stock_threshold ? 'Low stock' : 'In stock',
+            }))
+            exportPDF('Inventory Report', rows, 'inventory-report.pdf')
+          }} disabled={filtered.length === 0}>Export PDF</button>
+        </div>
       </Toolbar>
 
       <div className="card overflow-x-auto p-0">

@@ -9,7 +9,6 @@ import Employees from './pages/Employees'
 import Rooms from './pages/Rooms'
 import Bookings from './pages/Bookings'
 import Inventory from './pages/Inventory'
-import Reports from './pages/Reports'
 import ActivityLog from './pages/ActivityLog'
 
 export default function App() {
@@ -24,8 +23,6 @@ export default function App() {
           <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
           <Route path="/guests" element={<ProtectedRoute><Guests /></ProtectedRoute>} />
           <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-
           <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute adminOnly><ActivityLog /></ProtectedRoute>} />
         </Routes>

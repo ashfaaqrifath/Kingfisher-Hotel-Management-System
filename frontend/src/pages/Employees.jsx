@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
+import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
 
@@ -81,6 +82,30 @@ export default function Employees() {
           <option value="All">All statuses</option>
           {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
         </select>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((e) => ({
+              Name: e.full_name,
+              Role: e.job_role,
+              Phone: e.phone || '—',
+              'Salary (LKR)': e.salary,
+              Hired: e.hire_date,
+              Status: e.status,
+            }))
+            exportCSV(rows, 'employees-report.csv')
+          }} disabled={filtered.length === 0}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((e) => ({
+              Name: e.full_name,
+              Role: e.job_role,
+              Phone: e.phone || '—',
+              'Salary (LKR)': e.salary,
+              Hired: e.hire_date,
+              Status: e.status,
+            }))
+            exportPDF('Employees Report', rows, 'employees-report.pdf')
+          }} disabled={filtered.length === 0}>Export PDF</button>
+        </div>
       </Toolbar>
 
       <div className="card overflow-x-auto p-0">

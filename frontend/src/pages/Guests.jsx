@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
+import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
 
@@ -76,6 +77,28 @@ export default function Guests() {
           <option value="Female">Female</option>
           <option value="Other">Other</option>
         </select>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((g) => ({
+              Name: g.full_name,
+              Email: g.email || '—',
+              Phone: g.phone || '—',
+              NIC: g.nic || '—',
+              Gender: g.gender,
+            }))
+            exportCSV(rows, 'guests-report.csv')
+          }} disabled={filtered.length === 0}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((g) => ({
+              Name: g.full_name,
+              Email: g.email || '—',
+              Phone: g.phone || '—',
+              NIC: g.nic || '—',
+              Gender: g.gender,
+            }))
+            exportPDF('Guests Report', rows, 'guests-report.pdf')
+          }} disabled={filtered.length === 0}>Export PDF</button>
+        </div>
       </Toolbar>
 
       <div className="card overflow-x-auto p-0">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
+import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
 
@@ -117,7 +118,7 @@ export default function Bookings() {
 
   async function updateStatus(booking, status) {
     await supabase.from('bookings').update({ status }).eq('id', booking.id)
-    await logActivity(`Booking → ${status}`, `${booking.guests?.full_name} · Room ${booking.rooms?.room_number}`)
+    await logActivity(`Booking ${status}`, `${booking.guests?.full_name} · Room ${booking.rooms?.room_number}`)
     load()
   }
 
@@ -140,6 +141,30 @@ export default function Bookings() {
           <option>All</option>
           {STATUSES.map((s) => <option key={s}>{s}</option>)}
         </select>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((b) => ({
+              Guest: b.guests?.full_name || '—',
+              Room: b.rooms?.room_number || '—',
+              'Check-in': b.check_in,
+              'Check-out': b.check_out,
+              Status: b.status,
+              'Total (LKR)': b.total_amount,
+            }))
+            exportCSV(rows, 'bookings-report.csv')
+          }} disabled={filtered.length === 0}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const rows = filtered.map((b) => ({
+              Guest: b.guests?.full_name || '—',
+              Room: b.rooms?.room_number || '—',
+              'Check-in': b.check_in,
+              'Check-out': b.check_out,
+              Status: b.status,
+              'Total (LKR)': b.total_amount,
+            }))
+            exportPDF('Booking Report', rows, 'bookings-report.pdf')
+          }} disabled={filtered.length === 0}>Export PDF</button>
+        </div>
       </Toolbar>
 
       <div className="card overflow-x-auto p-0">

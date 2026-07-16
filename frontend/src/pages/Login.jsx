@@ -24,26 +24,26 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left brand panel — flat navy, no gradient */}
       <div className="hidden md:flex flex-col justify-between w-1/2 bg-navy-950 text-sand-100 px-14 py-12">
-        <div>
-          <p className="font-display font-semibold text-2xl tracking-tight">Kingfisher</p>
-          <p className="text-sand-300 text-sm uppercase tracking-wide">Beach Resort</p>
+        <div className="flex items-center gap-4">
+          <img src="images/kingfisher-logo.png" alt="Kingfisher logo" className="w-44 h-auto object-contain" loading="lazy" />
+          
         </div>
         <div>
           <p className="font-display text-3xl leading-snug max-w-sm">
             One dashboard for bookings, rooms, guests, and stock.
           </p>
           <p className="text-sand-300 text-sm mt-4 max-w-sm">
-            Built for the front desk and management team at Kingfisher Beach Resort, Yala.
+            Kingfisher Hotel Management System · v1.0
           </p>
         </div>
-        <p className="text-xs text-sand-300">Hotel Management System · v1.0</p>
+        <p className="text-xs text-sand-300">© Developed by Group CS03</p>
       </div>
 
       {/* Right form panel */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-6">
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold text-navy-950 mb-1">Sign in</h1>
-          <p className="text-sm text-navy-700 mb-6">Use your staff account to continue.</p>
+          <p className="text-sm text-navy-700 mb-6">Use your staff or admin account to continue.</p>
 
           {error && (
             <div className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded px-3 py-2">
