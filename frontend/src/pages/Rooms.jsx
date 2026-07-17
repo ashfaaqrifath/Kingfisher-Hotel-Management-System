@@ -10,9 +10,9 @@ const STATUSES = ['Available', 'Occupied', 'Maintenance']
 const EMPTY = { room_number: '', room_type: 'Standard', price_per_night: '', status: 'Available' }
 
 const STATUS_STYLE = {
-  Available: 'border-moss text-moss bg-moss/5',
-  Occupied: 'border-rust text-rust bg-rust/5',
-  Maintenance: 'border-amber text-amber bg-amber/5',
+  Available: { border: 'border-moss', bg: '#c7f4c7', text: '#1f8a55' },
+  Occupied: { border: 'border-rust', bg: '#f5ba9f', text: '#b3432b' },
+  Maintenance: { border: 'border-amber', bg: '#ffedd3', text: '#c97a2b' },
 }
 
 export default function Rooms() {
@@ -57,19 +57,21 @@ export default function Rooms() {
     load()
   }
 
+  const normalizedSearch = search.toLowerCase()
   const filtered = rooms.filter(
     (r) =>
-      r.room_number.toLowerCase().includes(search.toLowerCase()) &&
+      (String(r.room_number).toLowerCase().includes(normalizedSearch) ||
+        String(r.room_type).toLowerCase().includes(normalizedSearch)) &&
       (statusFilter === 'All' || r.status === statusFilter)
   )
 
   return (
     <Layout
-      title="Rooms"
+      title="Manage Rooms"
       subtitle="Room inventory, type, pricing, and live status"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Room</button>}
     >
-      <Toolbar search={search} onSearch={setSearch} placeholder="Search room number…">
+      <Toolbar search={search} onSearch={setSearch} placeholder="Search room number or type…">
         <select className="input max-w-[160px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option>All</option>
           {STATUSES.map((s) => <option key={s}>{s}</option>)}
@@ -81,13 +83,18 @@ export default function Rooms() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filtered.map((r) => (
-            <div key={r.id} className={`card border-l-4 ${STATUS_STYLE[r.status]} cursor-pointer`} onClick={() => openEdit(r)}>
+            <div
+              key={r.id}
+              className={`card border-2 border-l-4 ${STATUS_STYLE[r.status].border} cursor-pointer transition hover:shadow-lg`}
+              onClick={() => openEdit(r)}
+              style={{ backgroundColor: STATUS_STYLE[r.status].bg, color: STATUS_STYLE[r.status].text }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-display font-semibold text-lg">{r.room_number}</span>
-                <span className="badge badge-available" style={{ background: 'transparent', padding: 0 }}>{r.status}</span>
+                <span className="font-display font-semibold text-lg" style={{ color: STATUS_STYLE[r.status].text }}>{r.room_number}</span>
+                <span className="badge badge-available" style={{ background: 'transparent', padding: 0, color: STATUS_STYLE[r.status].text }}>{r.status}</span>
               </div>
-              <p className="text-xs text-navy-700 mb-1">{r.room_type}</p>
-              <p className="font-mono text-sm">LKR {Number(r.price_per_night).toLocaleString()}/night</p>
+              <p className="text-xs mb-1" style={{ color: STATUS_STYLE[r.status].text }}>{r.room_type}</p>
+              <p className="font-mono text-sm" style={{ color: STATUS_STYLE[r.status].text }}>LKR {Number(r.price_per_night).toLocaleString()}/night</p>
               <button
                 className="btn btn-sm btn-danger mt-3"
                 onClick={(e) => { e.stopPropagation(); handleDelete(r) }}

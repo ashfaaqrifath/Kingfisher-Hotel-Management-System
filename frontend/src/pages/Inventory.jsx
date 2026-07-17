@@ -65,7 +65,7 @@ export default function Inventory() {
 
   return (
     <Layout
-      title="Inventory"
+      title="Manage Inventory"
       subtitle="Supplies, stock levels, and low-stock alerts"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Item</button>}
     >

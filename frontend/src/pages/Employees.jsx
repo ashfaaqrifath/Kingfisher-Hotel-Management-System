@@ -69,7 +69,7 @@ export default function Employees() {
 
   return (
     <Layout
-      title="Employees"
+      title="Manage Employees"
       subtitle="Staff records, roles, and salary"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Employee</button>}
     >

@@ -67,7 +67,7 @@ export default function Guests() {
 
   return (
     <Layout
-      title="Guests"
+      title="Manage Guests"
       subtitle="Guest records and contact details"
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…">

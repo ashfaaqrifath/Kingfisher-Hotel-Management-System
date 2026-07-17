@@ -132,7 +132,7 @@ export default function Bookings() {
 
   return (
     <Layout
-      title="Bookings"
+      title="Manage Bookings"
       subtitle="Reservations, check-ins, and check-outs"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ New Booking</button>}
     >
@@ -251,7 +251,6 @@ export default function Bookings() {
                   <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
                     <option>Male</option>
                     <option>Female</option>
-                    <option>Other</option>
                   </select>
                 </div>
                 <div>

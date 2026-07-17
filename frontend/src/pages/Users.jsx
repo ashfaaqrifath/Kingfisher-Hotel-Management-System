@@ -10,7 +10,7 @@ const EMPTY = { full_name: '', email: '', password: '', role: 'staff' }
 const ROLE_OPTIONS = ['owner', 'admin', 'staff']
 
 export default function Users() {
-    const { user } = useAuth()
+    const { user, isOwner } = useAuth()
     const [profiles, setProfiles] = useState([])
     const [search, setSearch] = useState('')
     const [roleFilter, setRoleFilter] = useState('All')
@@ -38,18 +38,20 @@ export default function Users() {
     const ownerCount = useMemo(() => profiles.filter((profile) => profile.role === 'owner').length, [profiles])
 
     function openCreate() {
+        if (!isOwner) return
         setError('')
-        setForm(EMPTY)
+        setForm({ full_name: '', email: '', password: '', role: 'staff' })
         setEditingId(null)
         setModalOpen(true)
     }
 
     function openEdit(profile) {
+        if (!isOwner) return
         setError('')
         setForm({
-            auth_user_id: profile.id,
             full_name: profile.full_name || '',
             email: profile.email || '',
+            password: '',
             role: profile.role || 'staff',
         })
         setEditingId(profile.id)
@@ -58,14 +60,17 @@ export default function Users() {
 
     async function handleSubmit(e) {
         e.preventDefault()
-        setError('')
+        if (!isOwner) {
+            setError('Only the owner can change user profiles.')
+            return
+        }
 
         const fullName = form.full_name.trim()
         const email = form.email.trim()
         const role = form.role
 
         if (!fullName) {
-            setError('Please enter the person\'s full name.')
+            setError("Please enter the person's full name.")
             return
         }
         if (!email) {
@@ -126,6 +131,10 @@ export default function Users() {
     }
 
     async function handleDelete(profile) {
+        if (!isOwner) {
+            alert('Only the owner can delete user profiles.')
+            return
+        }
         if (profile.id === user?.id) {
             alert('You cannot delete your own account from this page.')
             return
@@ -155,13 +164,9 @@ export default function Users() {
 
     return (
         <Layout
-            title="Users"
-            subtitle="Manage hotel staff accounts, roles, and profile access"
-            actions={
-                <button className="btn btn-primary" onClick={openCreate}>
-                    + Add User
-                </button>
-            }
+            title="System Users"
+            subtitle={isOwner ? 'Manage hotel staff accounts, roles, and profile access' : 'View user profiles and roles'}
+            actions={isOwner ? <button className="btn btn-primary" onClick={openCreate}>+ Add User</button> : null}
         >
             <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, role…">
                 <select className="input max-w-[150px]" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
@@ -175,9 +180,11 @@ export default function Users() {
             </Toolbar>
 
             <div className="mb-4 rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-navy-700">
-                <p className="font-medium text-navy-950">Owner-only workflow</p>
+                <p className="font-medium text-navy-950">{isOwner ? 'Owner workflow' : 'View-only access'}</p>
                 <p className="mt-1">
-                    Create the first owner account once in Supabase Auth.
+                    {isOwner
+                        ? 'Owners can create, edit, and change roles for users from this page. The first owner account is created once in Supabase Auth.'
+                        : 'Admins can view the profiles table here, but only the owner can make changes.'}
                 </p>
             </div>
 
@@ -195,16 +202,12 @@ export default function Users() {
                     <tbody>
                         {loading && (
                             <tr>
-                                <td colSpan={5} className="text-center py-6 text-navy-700">
-                                    Loading…
-                                </td>
+                                <td colSpan={5} className="text-center py-6 text-navy-700">Loading…</td>
                             </tr>
                         )}
                         {!loading && filtered.length === 0 && (
                             <tr>
-                                <td colSpan={5} className="text-center py-6 text-navy-700">
-                                    No profiles found.
-                                </td>
+                                <td colSpan={5} className="text-center py-6 text-navy-700">No profiles found.</td>
                             </tr>
                         )}
                         {filtered.map((profile) => (
@@ -214,14 +217,18 @@ export default function Users() {
                                 <td className="capitalize">{profile.role}</td>
                                 <td className="font-mono text-xs">{profile.id}</td>
                                 <td className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <button className="btn btn-sm btn-secondary" onClick={() => openEdit(profile)}>
-                                            Edit
-                                        </button>
-                                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(profile)}>
-                                            Delete
-                                        </button>
-                                    </div>
+                                    {isOwner ? (
+                                        <div className="flex justify-end gap-2">
+                                            <button className="btn btn-sm btn-secondary" onClick={() => openEdit(profile)}>
+                                                Edit
+                                            </button>
+                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(profile)}>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-navy-700">Read only</span>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -234,23 +241,6 @@ export default function Users() {
                     {error && (
                         <div className="rounded border border-rust/30 bg-rust/10 px-3 py-2 text-sm text-rust">
                             {error}
-                        </div>
-                    )}
-
-                    {!editingId && (
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div>
-                                <label className="label">Create Password</label>
-                                <input
-                                    required
-                                    type="password"
-                                    className="input"
-                                    value={form.password}
-                                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                    placeholder="Create a secure password"
-                                />
-                            </div>
-                            
                         </div>
                     )}
 
@@ -274,6 +264,20 @@ export default function Users() {
                             onChange={(e) => setForm({ ...form, email: e.target.value })}
                         />
                     </div>
+
+                    {!editingId && (
+                        <div>
+                            <label className="label">Create password</label>
+                            <input
+                                required
+                                type="text"
+                                className="input"
+                                value={form.password}
+                                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                                placeholder="Create a secure password"
+                            />
+                        </div>
+                    )}
 
                     <div>
                         <label className="label">Role</label>

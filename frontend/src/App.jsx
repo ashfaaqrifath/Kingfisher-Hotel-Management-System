@@ -26,7 +26,7 @@ export default function App() {
           <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
           <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute adminOnly><ActivityLog /></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute ownerOnly><Users /></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute adminOnly><Users /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

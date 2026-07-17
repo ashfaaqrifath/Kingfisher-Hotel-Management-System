@@ -3,13 +3,13 @@ import { useAuth } from '../context/AuthContext'
 
 const links = [
   { to: '/', label: 'Dashboard', icon: '◧' },
-  { to: '/bookings', label: 'Bookings', icon: '▤' },
+  { to: '/bookings', label: 'Bookings', icon: '◫' },
   { to: '/rooms', label: 'Rooms', icon: '▦' },
   { to: '/guests', label: 'Guests', icon: '◍' },
   { to: '/employees', label: 'Employees', icon: '◎', adminOnly: true },
-  { to: '/inventory', label: 'Inventory', icon: '◫' },
+  { to: '/inventory', label: 'Inventory', icon: '▤' },
   { to: '/activity-log', label: 'Activity Log', icon: '≡', adminOnly: true },
-  { to: '/users', label: 'Users', icon: '◐', ownerOnly: true },
+  { to: '/users', label: 'Users', icon: '◐', adminOnly: true },
 ]
 
 export default function Sidebar() {
