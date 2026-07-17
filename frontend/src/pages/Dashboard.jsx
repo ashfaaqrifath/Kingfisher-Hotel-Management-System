@@ -93,7 +93,7 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
             <div className="card lg:col-span-2">
-              <h3 className="font-display font-semibold mb-4">Bookings — last 7 days</h3>
+              <h3 className="font-display font-semibold mb-4">Bookings - last 7 days</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={bookingTrend}>
                   <CartesianGrid stroke="#E2DDD1" vertical={false} />

@@ -106,7 +106,7 @@ export default function Inventory() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Item</th><th>Category</th><th>Quantity</th><th>Unit price (LKR)</th><th>Status</th><th className="text-right">Actions</th>
+              <th>Item</th><th>Category</th><th>Quantity</th><th>Unit price (LKR)</th><th>Status</th><th className="text-right"></th>
             </tr>
           </thead>
           <tbody>

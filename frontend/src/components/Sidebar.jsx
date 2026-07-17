@@ -9,10 +9,11 @@ const links = [
   { to: '/employees', label: 'Employees', icon: '◎', adminOnly: true },
   { to: '/inventory', label: 'Inventory', icon: '◫' },
   { to: '/activity-log', label: 'Activity Log', icon: '≡', adminOnly: true },
+  { to: '/users', label: 'Users', icon: '◐', ownerOnly: true },
 ]
 
 export default function Sidebar() {
-  const { profile, isAdmin, logout } = useAuth()
+  const { profile, isAdmin, isOwner, logout } = useAuth()
 
   return (
     <aside className="w-60 shrink-0 bg-navy-950 text-sand-100 flex flex-col h-screen sticky top-0">
@@ -23,17 +24,16 @@ export default function Sidebar() {
 
       <nav className="flex-1 py-4 px-2 space-y-1">
         {links
-          .filter((l) => !l.adminOnly || isAdmin)
+          .filter((l) => (!l.adminOnly || isAdmin) && (!l.ownerOnly || isOwner))
           .map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.to === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${
-                  isActive
-                    ? 'bg-teal-600 text-white font-medium'
-                    : 'text-sand-200 hover:bg-white/5'
+                `flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${isActive
+                  ? 'bg-teal-600 text-white font-medium'
+                  : 'text-sand-200 hover:bg-white/5'
                 }`
               }
             >

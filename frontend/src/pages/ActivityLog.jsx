@@ -67,7 +67,7 @@ export default function ActivityLog() {
   }
 
   return (
-    <Layout title="Activity Log" subtitle="Audit trail of all system actions (admin only)">
+    <Layout title="Activity Log" subtitle="Audit trail of all system actions">
       <Toolbar search={search} onSearch={setSearch} placeholder="Search user, action, or details…">
         <select className="input max-w-[260px]" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
           <option value="All">All users</option>

@@ -171,7 +171,7 @@ export default function Bookings() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Total (LKR)</th><th>Status</th><th className="text-right">Actions</th>
+              <th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Total (LKR)</th><th>Status</th><th className="text-right"></th>
             </tr>
           </thead>
           <tbody>

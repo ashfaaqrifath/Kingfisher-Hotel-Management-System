@@ -71,12 +71,7 @@ export default function Guests() {
       subtitle="Guest records and contact details"
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…">
-        <select className="input max-w-[140px]" value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}>
-          <option value="All">All genders</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
+        
         <div className="ml-auto flex gap-2">
           <button className="btn btn-secondary" onClick={() => {
             const rows = filtered.map((g) => ({
@@ -105,7 +100,7 @@ export default function Guests() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th><th>Email</th><th>Phone</th><th>NIC</th><th>Gender</th><th className="text-right">Actions</th>
+              <th>Name</th><th>Email</th><th>Phone</th><th>NIC</th><th>Gender</th><th className="text-right"></th>
             </tr>
           </thead>
           <tbody>

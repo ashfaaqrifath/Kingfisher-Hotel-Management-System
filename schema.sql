@@ -11,7 +11,8 @@ create extension if not exists "pgcrypto";
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
-  role text not null check (role in ('admin','staff')) default 'staff',
+  email text,
+  role text not null check (role in ('owner','admin','staff')) default 'staff',
   created_at timestamptz default now()
 );
 
@@ -19,8 +20,13 @@ create table if not exists profiles (
 create or replace function handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, role)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', new.email), 'staff');
+  insert into public.profiles (id, full_name, email, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.email,
+    'staff'
+  );
   return new;
 end;
 $$ language plpgsql security definer;
@@ -140,17 +146,26 @@ alter table bookings enable row level security;
 alter table inventory_items enable row level security;
 alter table activity_logs enable row level security;
 
--- Helper: is the current user an admin?
-create or replace function is_admin()
+-- Helper: is the current user an owner or admin?
+create or replace function is_admin_or_owner()
 returns boolean as $$
   select exists (
-    select 1 from profiles where id = auth.uid() and role = 'admin'
+    select 1 from profiles where id = auth.uid() and role in ('owner', 'admin')
   );
 $$ language sql security definer;
 
--- PROFILES: everyone can read all profiles (needed for name lookups); only admin can edit roles
+create or replace function is_owner()
+returns boolean as $$
+  select exists (
+    select 1 from profiles where id = auth.uid() and role = 'owner'
+  );
+$$ language sql security definer;
+
+-- PROFILES: everyone can read profiles; only the owner can create/update/delete them
 create policy "profiles_select" on profiles for select using (true);
-create policy "profiles_update_self_or_admin" on profiles for update using (id = auth.uid() or is_admin());
+create policy "profiles_insert_owner" on profiles for insert with check (is_owner());
+create policy "profiles_update_owner" on profiles for update using (is_owner()) with check (is_owner());
+create policy "profiles_delete_owner" on profiles for delete using (is_owner());
 
 -- GUESTS / EMPLOYEES / ROOMS / BOOKINGS / INVENTORY:
 -- any authenticated staff can read & write (day-to-day ops), matching the brief's
@@ -161,8 +176,8 @@ create policy "rooms_all_authenticated" on rooms for all using (auth.role() = 'a
 create policy "bookings_all_authenticated" on bookings for all using (auth.role() = 'authenticated');
 create policy "inventory_all_authenticated" on inventory_items for all using (auth.role() = 'authenticated');
 
--- ACTIVITY LOG: admin only
-create policy "activity_log_select_admin" on activity_logs for select using (is_admin());
+-- ACTIVITY LOG: owner/admin only
+create policy "activity_log_select_admin_or_owner" on activity_logs for select using (is_admin_or_owner());
 create policy "activity_log_insert_authenticated" on activity_logs for insert with check (auth.role() = 'authenticated');
 
 -- ============================================================
@@ -188,5 +203,9 @@ insert into inventory_items (item_name, category, quantity, unit, low_stock_thre
   ('Printer Paper','Office',5,'reams',5,950)
 on conflict do nothing;
 
--- Note: after running this, create your first admin user via Supabase Auth,
--- then run:  update profiles set role = 'admin' where id = '<that user''s uuid>';
+-- Note: create the first owner account once in Supabase Auth
+-- (Project > Authentication > Users > Add user), then set its profile row to role 'owner'.
+-- Example:
+-- insert into public.profiles (id, full_name, email, role)
+-- values ('<auth-user-id>', 'Owner Name', 'owner@example.com', 'owner')
+-- on conflict (id) do update set full_name = excluded.full_name, email = excluded.email, role = 'owner';

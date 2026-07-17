@@ -26,7 +26,7 @@ export default function Login() {
       <div className="hidden md:flex flex-col justify-between w-1/2 bg-navy-950 text-sand-100 px-14 py-12">
         <div className="flex items-center gap-4">
           <img src="images/kingfisher-logo.png" alt="Kingfisher logo" className="w-44 h-auto object-contain" loading="lazy" />
-          
+
         </div>
         <div>
           <p className="font-display text-3xl leading-snug max-w-sm">
@@ -43,7 +43,7 @@ export default function Login() {
       <div className="w-full md:w-1/2 flex items-center justify-center px-6">
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold text-navy-950 mb-1">Sign in</h1>
-          <p className="text-sm text-navy-700 mb-6">Use your staff or admin account to continue.</p>
+          <p className="text-sm text-navy-700 mb-6">Use your authorized account to continue.</p>
 
           {error && (
             <div className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded px-3 py-2">

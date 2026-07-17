@@ -10,6 +10,7 @@ import Rooms from './pages/Rooms'
 import Bookings from './pages/Bookings'
 import Inventory from './pages/Inventory'
 import ActivityLog from './pages/ActivityLog'
+import Users from './pages/Users'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
           <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute adminOnly><ActivityLog /></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute ownerOnly><Users /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

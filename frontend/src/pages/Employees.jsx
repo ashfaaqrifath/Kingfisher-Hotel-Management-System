@@ -112,7 +112,7 @@ export default function Employees() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th><th>Role</th><th>Phone</th><th>Salary (LKR)</th><th>Hired</th><th>Status</th><th className="text-right">Actions</th>
+              <th>Name</th><th>Role</th><th>Phone</th><th>Salary (LKR)</th><th>Hired</th><th>Status</th><th className="text-right"></th>
             </tr>
           </thead>
           <tbody>
