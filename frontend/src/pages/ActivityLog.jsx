@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import Layout from '../components/Layout'
 import Toolbar from '../components/Toolbar'
 import { useAuth } from '../context/AuthContext'
+import { exportPDF as exportReportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 
 export default function ActivityLog() {
@@ -57,29 +56,26 @@ export default function ActivityLog() {
   }
 
   function exportPDF(rows) {
-    const doc = new jsPDF()
-    doc.setFontSize(14)
-    doc.text('Kingfisher Beach Resort — Activity Log', 14, 16)
-    doc.setFontSize(10)
-    doc.text(`Generated ${new Date().toLocaleString()}`, 14, 22)
+    const actionBreakdown = rows.reduce((acc, row) => {
+      const action = row.action || 'Other'
+      acc[action] = (acc[action] || 0) + 1
+      return acc
+    }, {})
 
-    const tableBody = rows.map((r) => [
-      new Date(r.created_at).toLocaleString(),
-      r.profiles?.full_name || 'Unknown',
-      r.action,
-      r.details || '',
-    ])
+    const reportRows = rows.map((r) => ({
+      Timestamp: new Date(r.created_at).toLocaleString(),
+      User: r.profiles?.full_name || 'Unknown',
+      Action: r.action,
+      Details: r.details || '',
+    }))
 
-    autoTable(doc, {
-      startY: 28,
-      head: [['Timestamp', 'User', 'Action', 'Details']],
-      body: tableBody,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [15, 43, 70] },
-      columnStyles: { 3: { cellWidth: 'wrap' } },
+    exportReportPDF('Activity Log', reportRows, 'activity-log.pdf', {
+      summary: [
+        { label: 'Events', value: rows.length },
+        { label: 'Users', value: new Set(rows.map((row) => row.user_id)).size },
+        { label: 'Most common action', value: Object.entries(actionBreakdown).sort((a, b) => b[1] - a[1])[0]?.[0] || '—' },
+      ],
     })
-
-    doc.save('activity-log.pdf')
   }
 
   return (

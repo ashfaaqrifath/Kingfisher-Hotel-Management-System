@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
+import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
 
 const STATUSES = ['Booked', 'Checked In', 'Checked Out', 'Cancelled']
 const EMPTY = {
@@ -81,21 +82,31 @@ export default function Bookings() {
 
   function validateBookingForm() {
     const guestId = String(form.guest_id || '').trim()
-    const fullName = String(form.full_name || '').trim()
-    const email = String(form.email || '').trim()
-    const phone = String(form.phone || '').trim()
-    const nic = String(form.nic || '').trim()
-    const address = String(form.address || '').trim()
 
     if (!guestId) {
-      if (!fullName || !email || !phone || !nic || !address) {
+      // Validate full name
+      const nameValidation = validateFullName(form.full_name)
+      if (!nameValidation.valid) {
+        return nameValidation.error
+      }
+
+      // Validate email
+      const emailValidation = validateEmail(form.email)
+      if (!emailValidation.valid) {
+        return emailValidation.error
+      }
+
+      // Validate phone
+      const phoneValidation = validatePhoneNumber(form.phone)
+      if (!phoneValidation.valid) {
+        return phoneValidation.error
+      }
+
+      const nic = String(form.nic || '').trim()
+      const address = String(form.address || '').trim()
+
+      if (!nic || !address) {
         return 'Please choose an existing guest or complete all guest details before saving.'
-      }
-      if (!/^\S+@\S+\.\S+$/.test(email)) {
-        return 'Please enter a valid guest email address.'
-      }
-      if (!/^\+?[0-9\s-]{7,15}$/.test(phone)) {
-        return 'Please enter a valid guest phone number.'
       }
       if (nic.length < 5) {
         return 'Please enter a valid NIC number.'
@@ -252,7 +263,30 @@ export default function Bookings() {
               Status: b.status,
               'Total (LKR)': b.total_amount,
             }))
-            exportPDF('Booking Report', rows, 'bookings-report.pdf')
+            const statusBreakdown = ['Booked', 'Checked In', 'Checked Out', 'Cancelled'].map((status) => ({
+              label: status,
+              value: filtered.filter((b) => b.status === status).length,
+            }))
+            const trend = [...Array(7)].map((_, index) => {
+              const date = new Date()
+              date.setDate(date.getDate() - (6 - index))
+              const key = date.toISOString().slice(0, 10)
+              return {
+                label: date.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+                value: filtered.filter((b) => b.check_in?.slice(0, 10) === key).length,
+              }
+            })
+            exportPDF('Booking Report', rows, 'bookings-report.pdf', {
+              summary: [
+                { label: 'Bookings', value: filtered.length },
+                { label: 'Revenue', value: `LKR ${filtered.reduce((sum, b) => sum + Number(b.total_amount || 0), 0).toLocaleString()}` },
+                { label: 'Checked in', value: filtered.filter((b) => b.status === 'Checked In').length },
+              ],
+              charts: [
+                { type: 'pie', title: 'Status distribution', data: statusBreakdown.filter((item) => item.value > 0) },
+                { type: 'line', title: 'Recent stay trend', data: trend },
+              ],
+            })
           }} disabled={filtered.length === 0}>Export PDF</button>
         </div>
       </Toolbar>

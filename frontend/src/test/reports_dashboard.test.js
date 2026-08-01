@@ -1,6 +1,30 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+
+const { textMock } = vi.hoisted(() => ({ textMock: vi.fn() }))
+
+vi.mock('jspdf-autotable', () => ({ default: vi.fn() }))
+vi.mock('jspdf', () => ({
+  default: vi.fn(function () {
+    return {
+      internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
+      setFillColor: vi.fn(),
+      rect: vi.fn(),
+      setTextColor: vi.fn(),
+      setFontSize: vi.fn(),
+      setFont: vi.fn(),
+      text: textMock,
+      roundedRect: vi.fn(),
+      setDrawColor: vi.fn(),
+      line: vi.fn(),
+      circle: vi.fn(),
+      setLineWidth: vi.fn(),
+      save: vi.fn(),
+    }
+  }),
+}))
+
 import { adminClient, staffClient } from './helpers'
 import { exportPDF, exportCSV } from '../lib/reportUtils'
 
@@ -63,9 +87,17 @@ describe('Reports & dashboard', () => {
   })
 
   it('TC-S8-04: the PDF/CSV export functions in reportUtils execute without throwing', () => {
+    textMock.mockClear()
     const rows = [{ Name: 'Test Row', Value: 1 }]
     expect(() => exportCSV(rows, 'test-report.csv')).not.toThrow()
-    expect(() => exportPDF('Test Report', rows, 'test-report.pdf')).not.toThrow()
+    expect(() => exportPDF('Test Report', rows, 'test-report.pdf', {
+      summary: [{ label: 'Total', value: 1 }],
+      charts: [
+        { type: 'bar', title: 'Sample', data: [{ label: 'A', value: 1 }] },
+        { type: 'pie', title: 'Sample pie', data: [{ label: 'A', value: 1 }, { label: 'B', value: 2 }] },
+      ],
+    })).not.toThrow()
+    expect(textMock).toHaveBeenCalledWith('Executive summary', expect.any(Number), expect.any(Number))
   })
 
   it('TC-S8-05: a /reports route does not exist in the app router', () => {

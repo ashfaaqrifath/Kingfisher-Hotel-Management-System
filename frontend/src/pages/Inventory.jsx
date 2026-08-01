@@ -97,7 +97,18 @@ export default function Inventory() {
               'Unit Price (LKR)': i.unit_price,
               Status: i.quantity <= i.low_stock_threshold ? 'Low stock' : 'In stock',
             }))
-            exportPDF('Inventory Report', rows, 'inventory-report.pdf')
+            const statusBreakdown = [
+              { label: 'Low stock', value: filtered.filter((i) => i.quantity <= i.low_stock_threshold).length },
+              { label: 'Healthy', value: filtered.filter((i) => i.quantity > i.low_stock_threshold).length },
+            ]
+            exportPDF('Inventory Report', rows, 'inventory-report.pdf', {
+              summary: [
+                { label: 'Items', value: filtered.length },
+                { label: 'Low stock', value: statusBreakdown[0].value },
+                { label: 'Total value', value: `LKR ${filtered.reduce((sum, item) => sum + Number(item.unit_price || 0) * Number(item.quantity || 0), 0).toLocaleString()}` },
+              ],
+              charts: [{ type: 'pie', title: 'Stock health', data: statusBreakdown.filter((item) => item.value > 0) }],
+            })
           }} disabled={filtered.length === 0}>Export PDF</button>
         </div>
       </Toolbar>

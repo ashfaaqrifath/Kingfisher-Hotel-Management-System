@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
+import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
 
 const EMPTY = { full_name: '', email: '', phone: '', nic: '', address: '', gender: 'Male' }
 
@@ -16,6 +17,7 @@ export default function Guests() {
   const [form, setForm] = useState(EMPTY)
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   async function load() {
     setLoading(true)
@@ -29,22 +31,48 @@ export default function Guests() {
   function openCreate() {
     setForm(EMPTY)
     setEditingId(null)
+    setError('')
     setModalOpen(true)
   }
 
   function openEdit(g) {
     setForm(g)
     setEditingId(g.id)
+    setError('')
     setModalOpen(true)
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+
+    // Validate full name
+    const nameValidation = validateFullName(form.full_name)
+    if (!nameValidation.valid) {
+      setError(nameValidation.error)
+      return
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(form.email)
+    if (!emailValidation.valid) {
+      setError(emailValidation.error)
+      return
+    }
+
+    // Validate phone
+    const phoneValidation = validatePhoneNumber(form.phone)
+    if (!phoneValidation.valid) {
+      setError(phoneValidation.error)
+      return
+    }
+
+    const updatedForm = { ...form, full_name: nameValidation.value, email: emailValidation.value, phone: phoneValidation.value }
     if (editingId) {
-      await supabase.from('guests').update(form).eq('id', editingId)
+      await supabase.from('guests').update(updatedForm).eq('id', editingId)
       await logActivity('Updated guest', form.full_name)
     } else {
-      await supabase.from('guests').insert(form)
+      await supabase.from('guests').insert(updatedForm)
       await logActivity('Added guest', form.full_name)
     }
     setModalOpen(false)
@@ -91,7 +119,18 @@ export default function Guests() {
               NIC: g.nic || '—',
               Gender: g.gender,
             }))
-            exportPDF('Guests Report', rows, 'guests-report.pdf')
+            const genderBreakdown = ['Male', 'Female', 'Other'].map((gender) => ({
+              label: gender,
+              value: filtered.filter((g) => g.gender === gender).length,
+            }))
+            exportPDF('Guests Report', rows, 'guests-report.pdf', {
+              summary: [
+                { label: 'Guests', value: filtered.length },
+                { label: 'Male', value: filtered.filter((g) => g.gender === 'Male').length },
+                { label: 'Female', value: filtered.filter((g) => g.gender === 'Female').length },
+              ],
+              charts: [{ type: 'pie', title: 'Gender mix', data: genderBreakdown.filter((item) => item.value > 0) }],
+            })
           }} disabled={filtered.length === 0}>Export PDF</button>
         </div>
       </Toolbar>
@@ -129,6 +168,7 @@ export default function Guests() {
 
       <Modal open={modalOpen} title={editingId ? 'Edit Guest' : 'Add Guest'} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
           <div>
             <label className="label">Full name</label>
             <input required className="input" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />

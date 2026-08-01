@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { logActivity } from '../lib/activityLog'
+import { validateFullName, validateEmail, validatePhoneNumber, validateSalary } from '../lib/validation'
 
 const JOB_ROLES = ['Reception', 'Housekeeping', 'Chef', 'Safari Guide', 'Manager', 'Maintenance']
 const STATUSES = ['Active', 'On Leave', 'Terminated']
@@ -19,6 +20,7 @@ export default function Employees() {
   const [form, setForm] = useState(EMPTY)
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   async function load() {
     setLoading(true)
@@ -29,12 +31,42 @@ export default function Employees() {
 
   useEffect(() => { load() }, [])
 
-  function openCreate() { setForm(EMPTY); setEditingId(null); setModalOpen(true) }
-  function openEdit(e) { setForm(e); setEditingId(e.id); setModalOpen(true) }
+  function openCreate() { setForm(EMPTY); setEditingId(null); setError(''); setModalOpen(true) }
+  function openEdit(e) { setForm(e); setEditingId(e.id); setError(''); setModalOpen(true) }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const payload = { ...form, salary: Number(form.salary) || 0 }
+    setError('')
+
+    // Validate full name
+    const nameValidation = validateFullName(form.full_name)
+    if (!nameValidation.valid) {
+      setError(nameValidation.error)
+      return
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(form.email)
+    if (!emailValidation.valid) {
+      setError(emailValidation.error)
+      return
+    }
+
+    // Validate phone
+    const phoneValidation = validatePhoneNumber(form.phone)
+    if (!phoneValidation.valid) {
+      setError(phoneValidation.error)
+      return
+    }
+
+    // Validate salary
+    const salaryValidation = validateSalary(form.salary)
+    if (!salaryValidation.valid) {
+      setError(salaryValidation.error)
+      return
+    }
+
+    const payload = { ...form, full_name: nameValidation.value, email: emailValidation.value, phone: phoneValidation.value, salary: salaryValidation.value }
     if (editingId) {
       await supabase.from('employees').update(payload).eq('id', editingId)
       await logActivity('Updated employee', form.full_name)
@@ -103,7 +135,26 @@ export default function Employees() {
               Hired: e.hire_date,
               Status: e.status,
             }))
-            exportPDF('Employees Report', rows, 'employees-report.pdf')
+            const statusBreakdown = ['Active', 'On Leave', 'Inactive'].map((status) => ({
+              label: status,
+              value: filtered.filter((e) => e.status === status).length,
+            }))
+            const roleBreakdown = filtered.reduce((acc, employee) => {
+              const role = employee.job_role || 'Unassigned'
+              acc[role] = (acc[role] || 0) + 1
+              return acc
+            }, {})
+            exportPDF('Employees Report', rows, 'employees-report.pdf', {
+              summary: [
+                { label: 'Employees', value: filtered.length },
+                { label: 'Active', value: filtered.filter((employee) => employee.status === 'Active').length },
+                { label: 'Avg salary', value: `LKR ${Math.round(filtered.reduce((sum, employee) => sum + Number(employee.salary || 0), 0) / Math.max(filtered.length, 1)).toLocaleString()}` },
+              ],
+              charts: [
+                { type: 'pie', title: 'Status mix', data: statusBreakdown.filter((item) => item.value > 0) },
+                { type: 'bar', title: 'Role distribution', data: Object.entries(roleBreakdown).map(([label, value]) => ({ label, value })) },
+              ],
+            })
           }} disabled={filtered.length === 0}>Export PDF</button>
         </div>
       </Toolbar>
@@ -142,6 +193,7 @@ export default function Employees() {
 
       <Modal open={modalOpen} title={editingId ? 'Edit Employee' : 'Add Employee'} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
           <div>
             <label className="label">Full name</label>
             <input required className="input" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />

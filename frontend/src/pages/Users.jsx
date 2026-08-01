@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar'
 import { useAuth } from '../context/AuthContext'
 import { logActivity } from '../lib/activityLog'
 import { supabase } from '../lib/supabaseClient'
+import { validateFullName, validateEmail } from '../lib/validation'
 
 const EMPTY = { full_name: '', email: '', password: '', role: 'staff' }
 const ROLE_OPTIONS = ['owner', 'admin', 'staff']
@@ -69,18 +70,24 @@ export default function Users() {
             return
         }
 
-        const fullName = form.full_name.trim()
-        const email = form.email.trim()
+        // Validate full name
+        const nameValidation = validateFullName(form.full_name)
+        if (!nameValidation.valid) {
+            setError(nameValidation.error)
+            return
+        }
+
+        // Validate email
+        const emailValidation = validateEmail(form.email)
+        if (!emailValidation.valid) {
+            setError(emailValidation.error)
+            return
+        }
+
+        const fullName = nameValidation.value
+        const email = emailValidation.value
         const role = form.role
 
-        if (!fullName) {
-            setError("Please enter the person's full name.")
-            return
-        }
-        if (!email) {
-            setError('Please enter an email address.')
-            return
-        }
         if (!editingId && !form.password.trim()) {
             setError('Please provide a password for the new user.')
             return
