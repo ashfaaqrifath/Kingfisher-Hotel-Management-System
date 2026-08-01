@@ -10,7 +10,7 @@ const EMPTY = { full_name: '', email: '', password: '', role: 'staff' }
 const ROLE_OPTIONS = ['owner', 'admin', 'staff']
 
 export default function Users() {
-    const { user, isOwner } = useAuth()
+    const { user, isOwner, isAdmin } = useAuth()
     const [profiles, setProfiles] = useState([])
     const [search, setSearch] = useState('')
     const [roleFilter, setRoleFilter] = useState('All')
@@ -38,7 +38,7 @@ export default function Users() {
     const ownerCount = useMemo(() => profiles.filter((profile) => profile.role === 'owner').length, [profiles])
 
     function openCreate() {
-        if (!isOwner) return
+        if (!isAdmin) return
         setError('')
         setForm({ full_name: '', email: '', password: '', role: 'staff' })
         setEditingId(null)
@@ -60,8 +60,12 @@ export default function Users() {
 
     async function handleSubmit(e) {
         e.preventDefault()
-        if (!isOwner) {
-            setError('Only the owner can change user profiles.')
+        if (editingId && !isOwner) {
+            setError('Only the owner can edit user profiles.')
+            return
+        }
+        if (!editingId && !isAdmin) {
+            setError('Only admins and the owner can add user profiles.')
             return
         }
 
@@ -79,6 +83,11 @@ export default function Users() {
         }
         if (!editingId && !form.password.trim()) {
             setError('Please provide a password for the new user.')
+            return
+        }
+
+        if (!editingId && role === 'owner' && !isOwner) {
+            setError('Only the owner can create owner accounts.')
             return
         }
 
@@ -166,7 +175,7 @@ export default function Users() {
         <Layout
             title="System Users"
             subtitle={isOwner ? 'Manage hotel staff accounts, roles, and profile access' : 'View user profiles and roles'}
-            actions={isOwner ? <button className="btn btn-primary" onClick={openCreate}>+ Add User</button> : null}
+            actions={isAdmin ? <button className="btn btn-primary" onClick={openCreate}>+ Add User</button> : null}
         >
             <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, role…">
                 <select className="input max-w-[150px]" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
@@ -180,11 +189,13 @@ export default function Users() {
             </Toolbar>
 
             <div className="mb-4 rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-navy-700">
-                <p className="font-medium text-navy-950">{isOwner ? 'Owner workflow' : 'View-only access'}</p>
+                <p className="font-medium text-navy-950">{isOwner ? 'Owner workflow' : isAdmin ? 'Admin workflow' : 'View-only access'}</p>
                 <p className="mt-1">
                     {isOwner
-                        ? 'Owners can create, edit, and change roles for users from this page. The first owner account is created once in Supabase Auth.'
-                        : 'Admins can view the profiles table here, but only the owner can make changes.'}
+                        ? 'Owners can create, edit, and manage user roles from this page. The first owner account is created once in Supabase Auth.'
+                        : isAdmin
+                            ? 'Admins can add new user profiles from this page, but only the owner can edit existing profiles.'
+                            : 'Admins can view the profiles table here, but only the owner can make changes.'}
                 </p>
             </div>
 

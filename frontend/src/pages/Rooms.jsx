@@ -21,6 +21,7 @@ export default function Rooms() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
+  const [formError, setFormError] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -33,19 +34,68 @@ export default function Rooms() {
 
   useEffect(() => { load() }, [])
 
-  function openCreate() { setForm(EMPTY); setEditingId(null); setModalOpen(true) }
-  function openEdit(r) { setForm(r); setEditingId(r.id); setModalOpen(true) }
+  function openCreate() {
+    setForm(EMPTY)
+    setFormError('')
+    setEditingId(null)
+    setModalOpen(true)
+  }
+
+  function openEdit(r) {
+    setForm(r)
+    setFormError('')
+    setEditingId(r.id)
+    setModalOpen(true)
+  }
+
+  function validateRoomForm() {
+    const roomNumber = String(form.room_number || '').trim()
+    const pricePerNight = Number(form.price_per_night)
+
+    if (!roomNumber) {
+      return 'Please enter a room number.'
+    }
+
+    const duplicate = rooms.some((r) => r.id !== editingId && String(r.room_number).trim().toLowerCase() === roomNumber.toLowerCase())
+    if (duplicate) {
+      return 'This room number already exists. Please use a unique value.'
+    }
+
+    if (!Number.isFinite(pricePerNight) || pricePerNight <= 0) {
+      return 'Price per night must be greater than 0.'
+    }
+
+    return ''
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const payload = { ...form, price_per_night: Number(form.price_per_night) || 0 }
-    if (editingId) {
-      await supabase.from('rooms').update(payload).eq('id', editingId)
-      await logActivity('Updated room', form.room_number)
-    } else {
-      await supabase.from('rooms').insert(payload)
-      await logActivity('Added room', form.room_number)
+
+    const validationMessage = validateRoomForm()
+    if (validationMessage) {
+      setFormError(validationMessage)
+      return
     }
+
+    const payload = {
+      ...form,
+      room_number: String(form.room_number || '').trim(),
+      room_type: form.room_type,
+      price_per_night: Number(form.price_per_night),
+      status: form.status,
+    }
+
+    const { error } = editingId
+      ? await supabase.from('rooms').update(payload).eq('id', editingId)
+      : await supabase.from('rooms').insert(payload)
+
+    if (error) {
+      setFormError(`Could not save the room: ${error.message}`)
+      return
+    }
+
+    await logActivity(editingId ? 'Updated room' : 'Added room', payload.room_number)
+    setFormError('')
     setModalOpen(false)
     load()
   }
@@ -109,9 +159,10 @@ export default function Rooms() {
 
       <Modal open={modalOpen} title={editingId ? 'Edit Room' : 'Add Room'} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && <p className="rounded bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</p>}
           <div>
             <label className="label">Room number</label>
-            <input required className="input" value={form.room_number} onChange={(e) => setForm({ ...form, room_number: e.target.value })} />
+            <input required className="input" value={form.room_number} onChange={(e) => { setForm({ ...form, room_number: e.target.value }); if (formError) setFormError('') }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -122,7 +173,7 @@ export default function Rooms() {
             </div>
             <div>
               <label className="label">Price / night (LKR)</label>
-              <input type="number" min="0" className="input" value={form.price_per_night} onChange={(e) => setForm({ ...form, price_per_night: e.target.value })} />
+              <input type="number" min="0" className="input" value={form.price_per_night} onChange={(e) => { setForm({ ...form, price_per_night: e.target.value }); if (formError) setFormError('') }} />
             </div>
           </div>
           <div>

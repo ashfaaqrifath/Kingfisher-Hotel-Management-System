@@ -42,13 +42,14 @@ export default function Bookings() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
+  const [formError, setFormError] = useState('')
   const [loading, setLoading] = useState(true)
 
   async function load() {
     setLoading(true)
     const [b, g, r] = await Promise.all([
       supabase.from('bookings').select('*, guests(full_name), rooms(room_number, price_per_night)').order('created_at', { ascending: false }),
-      supabase.from('guests').select('id, full_name').order('full_name'),
+      supabase.from('guests').select('id, full_name, email, phone, nic, address, gender').order('full_name'),
       supabase.from('rooms').select('id, room_number, price_per_night, status').order('room_number'),
     ])
     setBookings(b.data || [])
@@ -59,7 +60,11 @@ export default function Bookings() {
 
   useEffect(() => { load() }, [])
 
-  function openCreate() { setForm({ ...EMPTY }); setModalOpen(true) }
+  function openCreate() {
+    setForm({ ...EMPTY })
+    setFormError('')
+    setModalOpen(true)
+  }
 
   function calcTotal(roomId, checkIn, checkOut) {
     const room = rooms.find((r) => r.id === roomId)
@@ -71,20 +76,86 @@ export default function Bookings() {
     const next = { ...form, ...patch }
     next.total_amount = calcTotal(next.room_id, next.check_in, next.check_out) || next.total_amount
     setForm(next)
+    if (formError) setFormError('')
+  }
+
+  function validateBookingForm() {
+    const guestId = String(form.guest_id || '').trim()
+    const fullName = String(form.full_name || '').trim()
+    const email = String(form.email || '').trim()
+    const phone = String(form.phone || '').trim()
+    const nic = String(form.nic || '').trim()
+    const address = String(form.address || '').trim()
+
+    if (!guestId) {
+      if (!fullName || !email || !phone || !nic || !address) {
+        return 'Please choose an existing guest or complete all guest details before saving.'
+      }
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return 'Please enter a valid guest email address.'
+      }
+      if (!/^\+?[0-9\s-]{7,15}$/.test(phone)) {
+        return 'Please enter a valid guest phone number.'
+      }
+      if (nic.length < 5) {
+        return 'Please enter a valid NIC number.'
+      }
+    }
+
+    if (!form.room_id) {
+      return 'Please select an available room for this booking.'
+    }
+
+    if (!form.check_in || !form.check_out) {
+      return 'Please choose both a check-in and a check-out date.'
+    }
+
+    const checkIn = new Date(form.check_in)
+    const checkOut = new Date(form.check_out)
+
+    if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+      return 'Please use valid check-in and check-out dates.'
+    }
+
+    if (checkOut <= checkIn) {
+      return 'Check-out must be later than check-in.'
+    }
+
+    const selectedRoom = rooms.find((r) => r.id === form.room_id)
+    if (!selectedRoom) {
+      return 'The selected room could not be found. Please choose another room.'
+    }
+
+    if (selectedRoom.status !== 'Available') {
+      return 'Please choose a room that is currently available.'
+    }
+
+    const computedTotal = Number(calcTotal(form.room_id, form.check_in, form.check_out))
+    if (!Number.isFinite(computedTotal) || computedTotal <= 0) {
+      return 'The booking total could not be calculated. Please verify the room and stay dates.'
+    }
+
+    return ''
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
 
-    let guestId = form.guest_id || ''
+    const validationMessage = validateBookingForm()
+    if (validationMessage) {
+      setFormError(validationMessage)
+      return
+    }
+
+    let guestId = String(form.guest_id || '').trim()
 
     if (!guestId) {
       const guestPayload = {
-        full_name: form.full_name?.trim(),
-        email: form.email?.trim(),
-        phone: form.phone?.trim(),
-        nic: form.nic?.trim(),
-        address: form.address?.trim(),
+        full_name: String(form.full_name || '').trim(),
+        email: String(form.email || '').trim(),
+        phone: String(form.phone || '').trim(),
+        nic: String(form.nic || '').trim(),
+        address: String(form.address || '').trim(),
         gender: form.gender,
       }
 
@@ -95,9 +166,10 @@ export default function Bookings() {
         .single()
 
       if (guestError) {
-        console.error('Failed to create guest', guestError)
+        setFormError(`Could not create the guest: ${guestError.message}`)
         return
       }
+
       guestId = createdGuest?.id || ''
     }
 
@@ -107,16 +179,34 @@ export default function Bookings() {
       check_in: form.check_in,
       check_out: form.check_out,
       status: form.status,
-      total_amount: Number(form.total_amount) || 0,
+      total_amount: Number(calcTotal(form.room_id, form.check_in, form.check_out)) || 0,
     }
 
-    await supabase.from('bookings').insert(payload)
+    const { error: bookingError } = await supabase.from('bookings').insert(payload)
+    if (bookingError) {
+      setFormError(`Could not create the booking: ${bookingError.message}`)
+      return
+    }
+
     await logActivity('Created booking', `Room ${rooms.find(r => r.id === form.room_id)?.room_number}`)
+    setFormError('')
     setModalOpen(false)
     load()
   }
 
+  function canCheckIn(booking) {
+    if (!booking?.check_in) return false
+    const checkIn = new Date(`${booking.check_in}T00:00:00`)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return checkIn <= today
+  }
+
   async function updateStatus(booking, status) {
+    if (status === 'Checked In' && !canCheckIn(booking)) {
+      return
+    }
+
     await supabase.from('bookings').update({ status }).eq('id', booking.id)
     await logActivity(`Booking ${status}`, `${booking.guests?.full_name} · Room ${booking.rooms?.room_number}`)
     load()
@@ -190,7 +280,14 @@ export default function Bookings() {
                 <td className="text-right whitespace-nowrap">
                   <div className="flex justify-end gap-2">
                     {b.status === 'Booked' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b, 'Checked In')}>Check in</button>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => updateStatus(b, 'Checked In')}
+                        disabled={!canCheckIn(b)}
+                        title={canCheckIn(b) ? 'Check in booking' : 'Check-in is only available on or after the booking check-in date.'}
+                      >
+                        Check in
+                      </button>
                     )}
                     {b.status === 'Checked In' && (
                       <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b, 'Checked Out')}>Check out</button>
@@ -208,6 +305,7 @@ export default function Bookings() {
 
       <Modal open={modalOpen} title="New Booking" onClose={() => setModalOpen(false)} width="max-w-5xl">
         <form onSubmit={handleSubmit} className="space-y-5">
+          {formError && <p className="rounded bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</p>}
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-4">
               <div className="border-b border-sand-300 pb-2">
@@ -217,7 +315,23 @@ export default function Bookings() {
 
               <div>
                 <label className="label">Existing guest (optional)</label>
-                <select className="input" value={form.guest_id} onChange={(e) => setForm({ ...form, guest_id: e.target.value })}>
+                <select
+                  className="input"
+                  value={form.guest_id}
+                  onChange={(e) => {
+                    const selectedGuest = guests.find((g) => g.id === e.target.value)
+                    setForm({
+                      ...form,
+                      guest_id: e.target.value,
+                      full_name: selectedGuest?.full_name || '',
+                      email: selectedGuest?.email || '',
+                      phone: selectedGuest?.phone || '',
+                      nic: selectedGuest?.nic || '',
+                      address: selectedGuest?.address || '',
+                      gender: selectedGuest?.gender || form.gender,
+                    })
+                  }}
+                >
                   <option value="">New guest</option>
                   {guests.map((g) => <option key={g.id} value={g.id}>{g.full_name}</option>)}
                 </select>

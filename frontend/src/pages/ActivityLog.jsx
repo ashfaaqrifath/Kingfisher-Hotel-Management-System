@@ -3,9 +3,11 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import Layout from '../components/Layout'
 import Toolbar from '../components/Toolbar'
+import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 
 export default function ActivityLog() {
+  const { isOwner } = useAuth()
   const [logs, setLogs] = useState([])
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,6 +41,20 @@ export default function ActivityLog() {
     const matchesUser = userFilter === 'All' || l.user_id === userFilter
     return matchesSearch && matchesUser
   })
+
+  async function handleDelete(log) {
+    if (!isOwner) return
+
+    if (!confirm(`Delete this activity log entry?`)) return
+
+    const { error } = await supabase.from('activity_logs').delete().eq('id', log.id)
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setLogs((current) => current.filter((item) => item.id !== log.id))
+  }
 
   function exportPDF(rows) {
     const doc = new jsPDF()
@@ -83,12 +99,12 @@ export default function ActivityLog() {
       <div className="card overflow-x-auto p-0">
         <table className="data-table">
           <thead>
-            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Details</th></tr>
+            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Details</th>{isOwner ? <th className="text-right">Delete</th> : null}</tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={4} className="text-center py-6 text-navy-700">Loading…</td></tr>}
+            {loading && <tr><td colSpan={isOwner ? 5 : 4} className="text-center py-6 text-navy-700">Loading…</td></tr>}
             {!loading && filteredLogs.length === 0 && (
-              <tr><td colSpan={4} className="text-center py-6 text-navy-700">No matching activity recorded.</td></tr>
+              <tr><td colSpan={isOwner ? 5 : 4} className="text-center py-6 text-navy-700">No matching activity recorded.</td></tr>
             )}
             {filteredLogs.map((l) => (
               <tr key={l.id}>
@@ -96,6 +112,11 @@ export default function ActivityLog() {
                 <td>{l.profiles?.full_name || 'Unknown'}</td>
                 <td className="font-medium">{l.action}</td>
                 <td className="text-navy-700">{l.details}</td>
+                {isOwner ? (
+                  <td className="text-right">
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(l)}>Delete</button>
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
