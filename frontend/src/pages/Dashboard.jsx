@@ -17,18 +17,21 @@ export default function Dashboard() {
   const [rooms, setRooms] = useState([])
   const [bookings, setBookings] = useState([])
   const [inventory, setInventory] = useState([])
+  const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const [r, b, i] = await Promise.all([
+      const [r, b, i, e] = await Promise.all([
         supabase.from('rooms').select('*').order('room_number'),
         supabase.from('bookings').select('*, guests(full_name), rooms(room_number)').order('created_at', { ascending: false }),
         supabase.from('inventory_items').select('*'),
+        supabase.from('employees').select('*'),
       ])
       setRooms(r.data || [])
       setBookings(b.data || [])
       setInventory(i.data || [])
+      setEmployees(e.data || [])
       setLoading(false)
     }
     load()
@@ -78,6 +81,23 @@ export default function Dashboard() {
     [inventory]
   )
 
+  const employeeStatusChart = useMemo(() => {
+    const counts = {}
+    employees.forEach((employee) => {
+      counts[employee.status] = (counts[employee.status] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+  }, [employees])
+
+  const inventoryStatusChart = useMemo(() => {
+    const lowStock = inventory.filter((item) => item.quantity <= item.low_stock_threshold)
+    return lowStock.slice(0, 6).map((item) => ({
+      name: item.item_name,
+      qty: item.quantity,
+      threshold: item.low_stock_threshold,
+    }))
+  }, [inventory])
+
   return (
     <Layout title="Dashboard" subtitle="Live overview of resort operations">
       {loading ? (
@@ -86,7 +106,7 @@ export default function Dashboard() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard label="Occupancy Rate" value={`${occupancyRate}%`} accent="teal" hint={`${rooms.length} total rooms`} />
-            <StatCard label="Active Bookings" value={bookings.filter(b => ['Booked','Checked In'].includes(b.status)).length} accent="navy" />
+            <StatCard label="Active Bookings" value={bookings.filter(b => ['Booked', 'Checked In'].includes(b.status)).length} accent="navy" />
             <StatCard label="Revenue (this month)" value={`LKR ${revenueThisMonth.toLocaleString()}`} accent="navy" />
             <StatCard label="Low Stock Alerts" value={lowStockCount} accent={lowStockCount > 0 ? 'rust' : 'teal'} hint="Items below threshold" />
           </div>
@@ -128,30 +148,9 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="card lg:col-span-2">
-              <h3 className="font-display font-semibold mb-1">Room board</h3>
-              <p className="text-xs text-navy-700 mb-4">Live key-card view of every room</p>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {rooms.map((r) => (
-                  <div
-                    key={r.id}
-                    className="aspect-square rounded-sm border flex flex-col items-center justify-center text-xs font-mono"
-                    style={{
-                      borderColor: ROOM_COLORS[r.status],
-                      color: ROOM_COLORS[r.status],
-                      background: `${ROOM_COLORS[r.status]}0D`,
-                    }}
-                    title={`${r.room_type} · ${r.status}`}
-                  >
-                    <span className="font-semibold">{r.room_number}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="card">
               <h3 className="font-display font-semibold mb-4">Inventory snapshot</h3>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={stockChart} layout="vertical" margin={{ left: 10 }}>
                   <CartesianGrid stroke="#E2DDD1" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11, fill: '#1F4E76' }} axisLine={false} tickLine={false} />
@@ -160,6 +159,41 @@ export default function Dashboard() {
                   <Bar dataKey="qty" fill="#129593" radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+
+            <div className="card">
+              <h3 className="font-display font-semibold mb-4">Low stock alerts</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={inventoryStatusChart} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid stroke="#E2DDD1" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#1F4E76' }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="name" type="category" width={90} tick={{ fontSize: 10, fill: '#1F4E76' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 4 }} />
+                  <Bar dataKey="qty" fill="#B3432B" radius={[0, 2, 2, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="card">
+              <h3 className="font-display font-semibold mb-4">Employee status mix</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={employeeStatusChart} dataKey="value" nameKey="name" innerRadius={42} outerRadius={76} paddingAngle={2}>
+                    {employeeStatusChart.map((entry, index) => (
+                      <Cell key={`${entry.name}-${index}`} fill={['#0F2B46', '#1F8A55', '#B3432B', '#C97A2B', '#129593'][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 4 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-3 text-xs mt-2">
+                {employeeStatusChart.map((entry, index) => (
+                  <span key={entry.name} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 inline-block rounded-sm" style={{ background: ['#0F2B46', '#1F8A55', '#B3432B', '#C97A2B', '#129593'][index % 5] }} />
+                    {entry.name}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </>

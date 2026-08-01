@@ -118,7 +118,7 @@ export default function Rooms() {
   return (
     <Layout
       title="Manage Rooms"
-      subtitle="Room inventory, type, pricing, and live status, this is a test"
+      subtitle="Room inventory, type, pricing, and live status"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Room</button>}
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search room number or type…">
