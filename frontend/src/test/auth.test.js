@@ -45,7 +45,7 @@ describe('Authentication', () => {
 
   it('TC-AUTH-05 / TC-S2-05: an authenticated session resolves a matching profile row', async () => {
     client = freshClient()
-    const { data: signInData } = await client.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+    const { data: signInData } = await client.auth.signInWithPassword({ email: STAFF_EMAIL, password: STAFF_PASSWORD })
     const { data: profile, error } = await client
       .from('profiles')
       .select('id, full_name, role, email')
@@ -53,7 +53,7 @@ describe('Authentication', () => {
       .single()
     expect(error).toBeNull()
     expect(profile.id).toBe(signInData.user.id)
-    expect(profile.email).toBe(ADMIN_EMAIL)
+    expect(profile.email).toBe(STAFF_EMAIL)
   })
 
   it('TC-AUTH-06 / TC-S2-06: admin account resolves to an admin/owner role', async () => {

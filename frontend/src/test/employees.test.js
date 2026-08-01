@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { adminClient, makeCleanup, TEST_PREFIX } from './helpers'
+import { adminClient, staffClient, makeCleanup, TEST_PREFIX } from './helpers'
 
 // TC-EMP-01..07 / TC-S4-01..07
 
@@ -101,14 +101,15 @@ describe('Employees module', () => {
   })
 
   it('TC-EMP-07 / TC-S4-07: employee list can be filtered by job role and status', async () => {
-    const { data: created } = await client
+    const staff = await staffClient()
+    const { data: created } = await staff
       .from('employees')
       .insert({ full_name: `${TEST_PREFIX}Filter Employee`, job_role: 'Safari Guide', status: 'Active' })
       .select()
       .single()
     cleanup.track('employees', created.id)
 
-    const { data: found, error } = await client
+    const { data: found, error } = await staff
       .from('employees')
       .select()
       .eq('job_role', 'Safari Guide')

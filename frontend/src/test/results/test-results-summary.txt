@@ -1,0 +1,95 @@
+Kingfisher HMS - Automated Test Results Summary
+Generated: 2026-07-29
+Command: npx vitest run
+Result: 61 total | 56 passed | 5 failed
+
+TC ID                   RESULT   NOTES
+------------------------------------------------------------------------------------------------
+TC-S1-01                PASS
+TC-S1-02                PASS
+TC-S1-03                PASS
+TC-S1-04                PASS
+TC-S1-05                PASS
+
+TC-AUTH-01 / TC-S2-01    PASS
+TC-AUTH-02 / TC-S2-02    PASS
+TC-AUTH-03 / TC-S2-03    PASS
+TC-AUTH-04 / TC-S2-04    PASS
+TC-AUTH-05 / TC-S2-05    PASS
+TC-AUTH-06 / TC-S2-06    PASS
+TC-AUTH-07 / TC-S2-07    PASS
+TC-AUTH-08 / TC-S2-08    PASS
+
+TC-GUEST-01 / TC-S3-01   PASS
+TC-GUEST-02 / TC-S3-02   PASS
+TC-GUEST-03 / TC-S3-03   PASS
+TC-GUEST-04 / TC-S3-04   PASS
+TC-GUEST-05 / TC-S3-05   PASS
+TC-GUEST-06 / TC-S3-06   PASS
+TC-GUEST-07 / TC-S3-07   PASS
+
+TC-EMP-01 / TC-S4-01     PASS
+TC-EMP-02 / TC-S4-02     PASS
+TC-EMP-03 / TC-S4-03     PASS
+TC-EMP-04 / TC-S4-04     PASS
+TC-EMP-05 / TC-S4-05     PASS
+TC-EMP-06 / TC-S4-06     PASS
+TC-EMP-07 / TC-S4-07     PASS
+
+TC-BOOK-01 / TC-S5-01    PASS
+TC-BOOK-02 / TC-S5-02    PASS
+TC-BOOK-03 / TC-S5-03    PASS
+TC-BOOK-04 / TC-S5-04    PASS
+TC-BOOK-05 / TC-S5-05    PASS
+TC-BOOK-06 / TC-S5-06    PASS
+TC-BOOK-07 / TC-S5-07    PASS
+
+TC-ROOM-01 / TC-S6-01    PASS
+TC-ROOM-02 / TC-S6-02    PASS
+TC-ROOM-03 / TC-S6-03    PASS
+TC-ROOM-04 / TC-S6-04    PASS
+TC-ROOM-05 / TC-S6-05    PASS
+TC-ROOM-06 / TC-S6-06    PASS
+
+TC-INV-01 / TC-S7-01     PASS
+TC-INV-02 / TC-S7-02     PASS
+TC-INV-03 / TC-S7-03     PASS
+TC-INV-04 / TC-S7-04     PASS
+TC-INV-05 / TC-S7-05     PASS
+TC-INV-06 / TC-S7-06     PASS
+TC-INV-07 / TC-S7-07     PASS
+TC-INV-08 / TC-S7-08     PASS
+TC-INV-09 / TC-S7-09     PASS
+TC-INV-10 / TC-S7-10     PASS
+
+TC-S8-01                 PASS
+TC-S8-02                 PASS
+TC-S8-03                 FAIL     Expected: booking report can be filtered by a date range.
+                                  Actual: Bookings.jsx only filters by status and a text
+                                  search (guest/room name) - no date-range input exists.
+TC-S8-04                 PASS
+TC-S8-05                 FAIL     Expected: a /reports route exists and is route-guarded
+                                  (blocked for Staff). Actual: no /reports route is defined
+                                  anywhere in App.jsx, so there is nothing to guard.
+TC-S8-06                 PASS
+
+TC-S9-01                 FAIL     Expected: a booking with status "Booked" sets the room to
+                                  Occupied. Actual: the sync_room_status() DB trigger only
+                                  flips a room to Occupied when status = "Checked In";
+                                  "Booked" leaves the room status untouched.
+TC-S9-02                 FAIL     Expected: the DB rejects a booking with no guest attached.
+                                  Actual: bookings.guest_id is nullable (FK is "on delete set
+                                  null", no NOT NULL constraint), so the insert succeeds.
+TC-S9-03                 PASS
+TC-S9-04                 PASS
+TC-S9-05                 FAIL     Expected: employees is an admin-only table, writes from
+                                  staff should be blocked. Actual: schema.sql's
+                                  "employees_all_authenticated" RLS policy grants ALL
+                                  privileges to any authenticated user, staff included -
+                                  only the frontend route guard (adminOnly on /employees)
+                                  keeps staff out of the UI, not the database itself.
+
+------------------------------------------------------------------------------------------------
+Totals: 61 run, 56 passed, 5 failed
+Failing test cases are intentional documented findings (real gaps between expected/spec
+behaviour and actual app behaviour) - no code changes were made to "fix" them.
