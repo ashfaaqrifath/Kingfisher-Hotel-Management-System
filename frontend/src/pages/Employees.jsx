@@ -69,8 +69,8 @@ export default function Employees() {
 
   return (
     <Layout
-      title="Manage Employees"
-      subtitle="Staff records, roles, and salary"
+      title="Manage Employees Data"
+      subtitle="Staff records, roles, and salary information."
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Employee</button>}
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, role, email…">
