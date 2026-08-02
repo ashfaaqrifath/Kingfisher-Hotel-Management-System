@@ -4,8 +4,9 @@ import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
+import { useAuth } from '../context/AuthContext'
 
 const STATUSES = ['Booked', 'Checked In', 'Checked Out', 'Cancelled']
 const EMPTY = {
@@ -37,22 +38,26 @@ function nightsBetween(a, b) {
 }
 
 export default function Bookings() {
+  const { isAdmin } = useAuth()
   const [bookings, setBookings] = useState([])
   const [guests, setGuests] = useState([])
   const [rooms, setRooms] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
+  const [hiddenStatusFilter, setHiddenStatusFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [formError, setFormError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [guestSearch, setGuestSearch] = useState('')
+  const [invoiceBooking, setInvoiceBooking] = useState(null)
 
   async function load() {
     setLoading(true)
     const [b, g, r] = await Promise.all([
-      supabase.from('bookings').select('*, guests(full_name), rooms(room_number, price_per_night)').order('created_at', { ascending: false }),
+      supabase.from('bookings').select('*, guests(full_name, email, phone, nic, address, gender), rooms(room_number, room_type, price_per_night)').order('created_at', { ascending: false }),
       supabase.from('guests').select('id, full_name, email, phone, nic, address, gender').order('full_name'),
-      supabase.from('rooms').select('id, room_number, price_per_night, status').order('room_number'),
+      supabase.from('rooms').select('id, room_number, room_type, price_per_night, status').order('room_number'),
     ])
     setBookings(b.data || [])
     setGuests(g.data || [])
@@ -64,6 +69,7 @@ export default function Bookings() {
 
   function openCreate() {
     setForm({ ...EMPTY })
+    setGuestSearch('')
     setFormError('')
     setModalOpen(true)
   }
@@ -149,8 +155,27 @@ export default function Bookings() {
       return 'The selected room could not be found. Please choose another room.'
     }
 
-    if (selectedRoom.status !== 'Available') {
+    if (getDerivedRoomStatus(selectedRoom.id) !== 'Available') {
       return 'Please choose a room that is currently available.'
+    }
+
+    const hasConflict = bookings.some((booking) => {
+      if (!booking?.room_id || booking.room_id !== form.room_id) {
+        return false
+      }
+
+      if (['Cancelled', 'Checked Out'].includes(booking.status)) {
+        return false
+      }
+
+      const existingCheckIn = new Date(`${booking.check_in}T00:00:00`)
+      const existingCheckOut = new Date(`${booking.check_out}T00:00:00`)
+
+      return checkIn < existingCheckOut && checkOut > existingCheckIn
+    })
+
+    if (hasConflict) {
+      return 'This room is already booked for the selected check-in date or stay period. Please choose another room or date.'
     }
 
     const discount = Number(form.discount_amount || 0)
@@ -216,7 +241,9 @@ export default function Bookings() {
       return
     }
 
-    await logActivity('Created booking', `Room ${rooms.find(r => r.id === form.room_id)?.room_number}`)
+    const roomName = rooms.find((r) => r.id === form.room_id)?.room_number || '—'
+    const bookingGuestName = guests.find((g) => g.id === guestId)?.full_name || form.full_name || 'Guest'
+    await logActivity('Created booking', `${bookingGuestName} • Room ${roomName} • ${form.status}`)
     setFormError('')
     setModalOpen(false)
     load()
@@ -235,17 +262,111 @@ export default function Bookings() {
       return
     }
 
+    const previousStatus = booking.status || '—'
     await supabase.from('bookings').update({ status }).eq('id', booking.id)
-    await logActivity(`Booking ${status}`, `${booking.guests?.full_name} · Room ${booking.rooms?.room_number}`)
+    await logActivity(
+      `Booking ${status}`,
+      `${booking.guests?.full_name || 'Guest'} • Room ${booking.rooms?.room_number || '—'} • ${previousStatus} → ${status}`
+    )
     load()
   }
 
-  const availableRooms = rooms.filter((r) => r.status === 'Available')
+  async function handleDelete(booking) {
+    if (!confirm(`Delete cancelled booking for ${booking.guests?.full_name || 'this guest'}?`)) {
+      return
+    }
+
+    const { error } = await supabase.from('bookings').delete().eq('id', booking.id)
+    if (error) {
+      setFormError(`Could not delete the booking: ${error.message}`)
+      return
+    }
+
+    await logActivity('Deleted booking', `${booking.guests?.full_name || 'Guest'} • Room ${booking.rooms?.room_number || '—'} • ${booking.status || '—'}`)
+    setFormError('')
+    load()
+  }
+
+  function openInvoice(booking) {
+    setInvoiceBooking(booking)
+  }
+
+  function closeInvoice() {
+    setInvoiceBooking(null)
+  }
+
+  function exportInvoicePdf() {
+    if (!invoiceBooking) return
+
+    const room = rooms.find((r) => r.id === invoiceBooking.room_id)
+    const nights = nightsBetween(invoiceBooking.check_in, invoiceBooking.check_out)
+    const baseTotal = Number(room?.price_per_night || 0) * nights
+    const total = Number(invoiceBooking.total_amount || baseTotal || 0)
+    const discount = Math.max(0, baseTotal - total)
+
+    exportPDF('Booking Invoice', [{
+      Guest: invoiceBooking.guests?.full_name || '—',
+      Phone: invoiceBooking.guests?.phone || '—',
+      Email: invoiceBooking.guests?.email || '—',
+      NIC: invoiceBooking.guests?.nic || '—',
+      Address: invoiceBooking.guests?.address || '—',
+      Room: invoiceBooking.rooms?.room_number || '—',
+      'Check-in': invoiceBooking.check_in,
+      'Check-out': invoiceBooking.check_out,
+      Status: invoiceBooking.status,
+      Nights: nights,
+      'Room rate / night': `LKR ${Number(room?.price_per_night || 0).toLocaleString()}`,
+      'Base total': `LKR ${baseTotal.toLocaleString()}`,
+      'Discount (LKR)': `LKR ${discount.toLocaleString()}`,
+      'Total (LKR)': total,
+    }], `invoice-${invoiceBooking.id}.pdf`, {
+      summary: [
+        { label: 'Guest', value: invoiceBooking.guests?.full_name || '—' },
+        { label: 'Room', value: invoiceBooking.rooms?.room_number || '—' },
+        { label: 'Invoice total', value: `LKR ${total.toLocaleString()}` },
+      ],
+    })
+  }
+
+  function getDerivedRoomStatus(roomId) {
+    const room = rooms.find((r) => r.id === roomId)
+    if (!room) return 'Available'
+    if (room.status === 'Maintenance') return 'Maintenance'
+
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    const activeBooking = bookings.find((booking) => {
+      if (!booking.room_id || booking.room_id !== roomId) return false
+      if (['Cancelled', 'Checked Out'].includes(booking.status)) return false
+
+      const bookingCheckOut = new Date(`${booking.check_out}T00:00:00`)
+      return bookingCheckOut > now
+    })
+
+    if (!activeBooking) return 'Available'
+    if (activeBooking.status === 'Checked In') return 'Occupied'
+    return 'Booked'
+  }
+
+  const availableRooms = rooms
+    .map((room) => ({ ...room, derivedStatus: getDerivedRoomStatus(room.id) }))
+    .filter((room) => room.derivedStatus === 'Available')
+
+  const guestSearchResults = guests.filter((guest) => {
+    const search = guestSearch.trim().toLowerCase()
+    if (!search) return false
+
+    return [guest.full_name, guest.email, guest.phone, guest.nic]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(search))
+  })
 
   const filtered = bookings.filter((b) => {
     const matchesSearch = `${b.guests?.full_name} ${b.rooms?.room_number}`.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'All' || b.status === statusFilter
-    return matchesSearch && matchesStatus
+    const hidesStatus = hiddenStatusFilter === 'All' || b.status !== hiddenStatusFilter
+    return matchesSearch && matchesStatus && hidesStatus
   })
 
   return (
@@ -258,6 +379,10 @@ export default function Bookings() {
         <select className="input max-w-[160px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option>All</option>
           {STATUSES.map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <select className="input max-w-[180px]" value={hiddenStatusFilter} onChange={(e) => setHiddenStatusFilter(e.target.value)}>
+          <option value="All">Hide status: All</option>
+          {STATUSES.map((s) => <option key={`hide-${s}`} value={s}>Hide {s}</option>)}
         </select>
         <div className="ml-auto flex gap-2">
           <button className="btn btn-secondary" onClick={() => {
@@ -312,13 +437,13 @@ export default function Bookings() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Total (LKR)</th><th>Status</th><th className="text-right"></th>
+              <th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th className="text-right"></th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={7} className="text-center py-6 text-navy-700">Loading…</td></tr>}
+            {loading && <tr><td colSpan={6} className="text-center py-6 text-navy-700">Loading…</td></tr>}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-6 text-navy-700">No bookings found.</td></tr>
+              <tr><td colSpan={6} className="text-center py-6 text-navy-700">No bookings found.</td></tr>
             )}
             {filtered.map((b) => (
               <tr key={b.id}>
@@ -326,10 +451,12 @@ export default function Bookings() {
                 <td>{b.rooms?.room_number || '—'}</td>
                 <td>{b.check_in}</td>
                 <td>{b.check_out}</td>
-                <td className="font-mono">{Number(b.total_amount).toLocaleString()}</td>
                 <td><span className={`badge ${STATUS_BADGE[b.status]}`}>{b.status}</span></td>
                 <td className="text-right whitespace-nowrap">
                   <div className="flex justify-end gap-2">
+                    {b.status !== 'Cancelled' && (
+                      <button className="btn btn-sm btn-secondary" onClick={() => openInvoice(b)}>Invoice</button>
+                    )}
                     {b.status === 'Booked' && (
                       <button
                         className="btn btn-sm btn-primary"
@@ -346,6 +473,9 @@ export default function Bookings() {
                     {['Booked', 'Checked In'].includes(b.status) && (
                       <button className="btn btn-sm btn-danger" onClick={() => updateStatus(b, 'Cancelled')}>Cancel</button>
                     )}
+                    {b.status === 'Cancelled' && isAdmin && (
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(b)}>Delete</button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -353,6 +483,85 @@ export default function Bookings() {
           </tbody>
         </table>
       </div>
+
+      <Modal open={Boolean(invoiceBooking)} title="Booking Invoice" onClose={closeInvoice} width="max-w-2xl">
+        {invoiceBooking && (
+          <div className="space-y-4">
+            <div className="rounded border border-sand-300 bg-sand-50 p-4">
+              <div className="grid md:grid-cols-2 gap-3 text-sm text-navy-800">
+                <div>
+                  <p className="font-semibold text-navy-950">Guest</p>
+                  <p>{invoiceBooking.guests?.full_name || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Phone</p>
+                  <p>{invoiceBooking.guests?.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Email</p>
+                  <p>{invoiceBooking.guests?.email || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">NIC</p>
+                  <p>{invoiceBooking.guests?.nic || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Address</p>
+                  <p>{invoiceBooking.guests?.address || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Room</p>
+                  <p>{invoiceBooking.rooms?.room_number || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Status</p>
+                  <p>{invoiceBooking.status}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Check-in</p>
+                  <p>{invoiceBooking.check_in}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Check-out</p>
+                  <p>{invoiceBooking.check_out}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-navy-950">Gender</p>
+                  <p>{invoiceBooking.guests?.gender || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded border border-sand-300 p-4 space-y-2 text-sm text-navy-800">
+              <div className="flex justify-between">
+                <span>Room rate / night</span>
+                <span className="font-semibold">LKR {Number(rooms.find((r) => r.id === invoiceBooking.room_id)?.price_per_night || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Nights</span>
+                <span className="font-semibold">{nightsBetween(invoiceBooking.check_in, invoiceBooking.check_out)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Base total</span>
+                <span className="font-semibold">LKR {Number(calcTotal(invoiceBooking.room_id, invoiceBooking.check_in, invoiceBooking.check_out) || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Discount</span>
+                <span className="font-semibold">LKR {Math.max(0, Number(calcTotal(invoiceBooking.room_id, invoiceBooking.check_in, invoiceBooking.check_out) || 0) - Number(invoiceBooking.total_amount || 0)).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between border-t border-sand-300 pt-2 text-base text-navy-950">
+                <span className="font-semibold">Total due</span>
+                <span className="font-semibold">LKR {Number(invoiceBooking.total_amount || calcTotal(invoiceBooking.room_id, invoiceBooking.check_in, invoiceBooking.check_out) || 0).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn btn-secondary" onClick={closeInvoice}>Close</button>
+              <button type="button" className="btn btn-primary" onClick={exportInvoicePdf}>Export PDF</button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={modalOpen} title="New Booking" onClose={() => setModalOpen(false)} width="max-w-5xl">
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -365,27 +574,57 @@ export default function Bookings() {
               </div>
 
               <div>
-                <label className="label">Existing guest (optional)</label>
-                <select
+                <label className="label">Search existing guest</label>
+                <input
                   className="input"
-                  value={form.guest_id}
+                  placeholder="Search by name, phone, email, or NIC"
+                  value={guestSearch}
                   onChange={(e) => {
-                    const selectedGuest = guests.find((g) => g.id === e.target.value)
-                    setForm({
-                      ...form,
-                      guest_id: e.target.value,
-                      full_name: selectedGuest?.full_name || '',
-                      email: selectedGuest?.email || '',
-                      phone: selectedGuest?.phone || '',
-                      nic: selectedGuest?.nic || '',
-                      address: selectedGuest?.address || '',
-                      gender: selectedGuest?.gender || form.gender,
-                    })
+                    const nextValue = e.target.value
+                    setGuestSearch(nextValue)
+
+                    if (!nextValue.trim()) {
+                      setForm({
+                        ...form,
+                        guest_id: '',
+                        full_name: '',
+                        email: '',
+                        phone: '',
+                        nic: '',
+                        address: '',
+                        gender: form.gender,
+                      })
+                    }
                   }}
-                >
-                  <option value="">New guest</option>
-                  {guests.map((g) => <option key={g.id} value={g.id}>{g.full_name}</option>)}
-                </select>
+                />
+
+                {guestSearch.trim() && guestSearchResults.length > 0 && (
+                  <div className="mt-2 rounded border border-sand-300 bg-sand-50 max-h-40 overflow-auto">
+                    {guestSearchResults.map((guest) => (
+                      <button
+                        key={guest.id}
+                        type="button"
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-sand-200"
+                        onClick={() => {
+                          setGuestSearch('')
+                          setForm({
+                            ...form,
+                            guest_id: guest.id,
+                            full_name: guest.full_name || '',
+                            email: guest.email || '',
+                            phone: guest.phone || '',
+                            nic: guest.nic || '',
+                            address: guest.address || '',
+                            gender: guest.gender || form.gender,
+                          })
+                        }}
+                      >
+                        <span className="font-medium text-navy-950">{guest.full_name}</span>
+                        <span className="block text-navy-700">{guest.phone || guest.email || guest.nic || 'No contact details'}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-3">
@@ -436,7 +675,7 @@ export default function Bookings() {
                 <select required className="input" value={form.room_id} onChange={(e) => handleRoomOrDateChange({ room_id: e.target.value })}>
                   <option value="">Select room…</option>
                   {availableRooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.room_number} — LKR {r.price_per_night.toLocaleString()}/night</option>
+                    <option key={r.id} value={r.id}>{r.room_number} — {r.room_type || 'Room'} — LKR {Number(r.price_per_night || 0).toLocaleString()}/night</option>
                   ))}
                 </select>
               </div>
@@ -461,7 +700,7 @@ export default function Bookings() {
                   value={form.discount_amount}
                   onChange={(e) => handleRoomOrDateChange({ discount_amount: e.target.value })}
                 />
-                
+
               </div>
 
               <div>

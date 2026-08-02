@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 
 const CATEGORIES = ['Linen', 'Toiletries', 'Food & Beverage', 'Kitchen', 'Maintenance', 'Office']
 const EMPTY = { item_name: '', category: 'Linen', quantity: '', unit: 'pcs', low_stock_threshold: 10, unit_price: '' }
@@ -41,11 +41,19 @@ export default function Inventory() {
       updated_at: new Date().toISOString(),
     }
     if (editingId) {
+      const existingItem = items.find((item) => item.id === editingId)
       await supabase.from('inventory_items').update(payload).eq('id', editingId)
-      await logActivity('Updated inventory item', form.item_name)
+      await logActivity(
+        'Updated inventory item',
+        buildChangeSummary(payload.item_name, existingItem || {}, payload, [
+          { key: 'category', label: 'Category' },
+          { key: 'quantity', label: 'Quantity' },
+          { key: 'unit_price', label: 'Unit Price' },
+        ])
+      )
     } else {
       await supabase.from('inventory_items').insert(payload)
-      await logActivity('Added inventory item', form.item_name)
+      await logActivity('Added inventory item', `${payload.item_name} • ${payload.category} • Qty: ${payload.quantity}`)
     }
     setModalOpen(false)
     load()
@@ -54,7 +62,7 @@ export default function Inventory() {
   async function handleDelete(item) {
     if (!confirm(`Remove "${item.item_name}" from inventory?`)) return
     await supabase.from('inventory_items').delete().eq('id', item.id)
-    await logActivity('Deleted inventory item', item.item_name)
+    await logActivity('Deleted inventory item', `${item.item_name} • ${item.category || '—'} • Qty: ${item.quantity || 0}`)
     load()
   }
 

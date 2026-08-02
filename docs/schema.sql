@@ -71,9 +71,9 @@ create table if not exists employees (
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
   room_number text not null unique,
-  room_type text not null check (room_type in ('Standard','Deluxe','Suite','Beach Villa')),
+  room_type text not null check (room_type in ('Standard','Deluxe','Suite')),
   price_per_night numeric(10,2) not null default 0,
-  status text not null check (status in ('Available','Occupied','Maintenance')) default 'Available',
+  status text not null check (status in ('Available','Booked','Occupied','Maintenance')) default 'Available',
   created_at timestamptz default now()
 );
 
@@ -96,7 +96,9 @@ create table if not exists bookings (
 create or replace function sync_room_status()
 returns trigger as $$
 begin
-  if new.status = 'Checked In' then
+  if new.status = 'Booked' then
+    update rooms set status = 'Booked' where id = new.room_id;
+  elsif new.status = 'Checked In' then
     update rooms set status = 'Occupied' where id = new.room_id;
   elsif new.status in ('Checked Out','Cancelled') then
     update rooms set status = 'Available' where id = new.room_id;

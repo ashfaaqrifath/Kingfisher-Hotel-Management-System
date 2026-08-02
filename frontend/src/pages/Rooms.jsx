@@ -3,14 +3,15 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { supabase } from '../lib/supabaseClient'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 
-const ROOM_TYPES = ['Standard', 'Deluxe', 'Suite', 'Beach Villa']
-const STATUSES = ['Available', 'Occupied', 'Maintenance']
+const ROOM_TYPES = ['Standard', 'Deluxe', 'Suite']
+const STATUSES = ['Available', 'Booked', 'Occupied', 'Maintenance']
 const EMPTY = { room_number: '', room_type: 'Standard', price_per_night: '', status: 'Available' }
 
 const STATUS_STYLE = {
   Available: { border: 'border-moss', bg: '#c7f4c7', text: '#1f8a55' },
+  Booked: { border: 'border-sky', bg: '#dbeafe', text: '#1d4ed8' },
   Occupied: { border: 'border-rust', bg: '#f5ba9f', text: '#b3432b' },
   Maintenance: { border: 'border-amber', bg: '#ffedd3', text: '#c97a2b' },
 }
@@ -27,8 +28,39 @@ export default function Rooms() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from('rooms').select('*').order('room_number')
-    setRooms(data || [])
+    const [roomsResult, bookingsResult] = await Promise.all([
+      supabase.from('rooms').select('*').order('room_number'),
+      supabase.from('bookings').select('id, room_id, status, check_in, check_out').order('check_in', { ascending: true }),
+    ])
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const roomsWithDerivedStatus = (roomsResult.data || []).map((room) => {
+      if (room.status === 'Maintenance') {
+        return { ...room, derivedStatus: 'Maintenance' }
+      }
+
+      const activeBooking = (bookingsResult.data || []).find((booking) => {
+        if (!booking.room_id || booking.room_id !== room.id) return false
+        if (['Cancelled', 'Checked Out'].includes(booking.status)) return false
+
+        const bookingCheckOut = new Date(`${booking.check_out}T00:00:00`)
+        return bookingCheckOut > today
+      })
+
+      if (!activeBooking) {
+        return { ...room, derivedStatus: 'Available' }
+      }
+
+      if (activeBooking.status === 'Checked In') {
+        return { ...room, derivedStatus: 'Occupied' }
+      }
+
+      return { ...room, derivedStatus: 'Booked' }
+    })
+
+    setRooms(roomsWithDerivedStatus)
     setLoading(false)
   }
 
@@ -42,7 +74,13 @@ export default function Rooms() {
   }
 
   function openEdit(r) {
-    setForm(r)
+    setForm({
+      ...r,
+      status: r.status,
+      room_number: r.room_number,
+      room_type: r.room_type,
+      price_per_night: r.price_per_night,
+    })
     setFormError('')
     setEditingId(r.id)
     setModalOpen(true)
@@ -78,7 +116,6 @@ export default function Rooms() {
     }
 
     const payload = {
-      ...form,
       room_number: String(form.room_number || '').trim(),
       room_type: form.room_type,
       price_per_night: Number(form.price_per_night),
@@ -94,7 +131,19 @@ export default function Rooms() {
       return
     }
 
-    await logActivity(editingId ? 'Updated room' : 'Added room', payload.room_number)
+    if (editingId) {
+      const existingRoom = rooms.find((room) => room.id === editingId)
+      await logActivity(
+        'Updated room',
+        buildChangeSummary(payload.room_number, existingRoom || {}, payload, [
+          { key: 'room_type', label: 'Type' },
+          { key: 'status', label: 'Status' },
+          { key: 'price_per_night', label: 'Price' },
+        ])
+      )
+    } else {
+      await logActivity('Added room', `${payload.room_number} • ${payload.room_type} • ${payload.status}`)
+    }
     setFormError('')
     setModalOpen(false)
     load()
@@ -103,7 +152,7 @@ export default function Rooms() {
   async function handleDelete(r) {
     if (!confirm(`Delete room ${r.room_number}?`)) return
     await supabase.from('rooms').delete().eq('id', r.id)
-    await logActivity('Deleted room', r.room_number)
+    await logActivity('Deleted room', `${r.room_number} • ${r.room_type || '—'} • ${r.status || '—'}`)
     load()
   }
 
@@ -112,7 +161,7 @@ export default function Rooms() {
     (r) =>
       (String(r.room_number).toLowerCase().includes(normalizedSearch) ||
         String(r.room_type).toLowerCase().includes(normalizedSearch)) &&
-      (statusFilter === 'All' || r.status === statusFilter)
+      (statusFilter === 'All' || r.derivedStatus === statusFilter)
   )
 
   return (
@@ -135,16 +184,16 @@ export default function Rooms() {
           {filtered.map((r) => (
             <div
               key={r.id}
-              className={`card border-2 border-l-4 ${STATUS_STYLE[r.status].border} cursor-pointer transition hover:shadow-lg`}
+              className={`card border-2 border-l-4 ${STATUS_STYLE[r.derivedStatus].border} cursor-pointer transition hover:shadow-lg`}
               onClick={() => openEdit(r)}
-              style={{ backgroundColor: STATUS_STYLE[r.status].bg, color: STATUS_STYLE[r.status].text }}
+              style={{ backgroundColor: STATUS_STYLE[r.derivedStatus].bg, color: STATUS_STYLE[r.derivedStatus].text }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-display font-semibold text-lg" style={{ color: STATUS_STYLE[r.status].text }}>{r.room_number}</span>
-                <span className="badge badge-available" style={{ background: 'transparent', padding: 0, color: STATUS_STYLE[r.status].text }}>{r.status}</span>
+                <span className="font-display font-semibold text-lg" style={{ color: STATUS_STYLE[r.derivedStatus].text }}>{r.room_number}</span>
+                <span className="badge badge-available" style={{ background: 'transparent', padding: 0, color: STATUS_STYLE[r.derivedStatus].text }}>{r.derivedStatus}</span>
               </div>
-              <p className="text-xs mb-1" style={{ color: STATUS_STYLE[r.status].text }}>{r.room_type}</p>
-              <p className="font-mono text-sm" style={{ color: STATUS_STYLE[r.status].text }}>LKR {Number(r.price_per_night).toLocaleString()}/night</p>
+              <p className="text-xs mb-1" style={{ color: STATUS_STYLE[r.derivedStatus].text }}>{r.room_type}</p>
+              <p className="font-mono text-sm" style={{ color: STATUS_STYLE[r.derivedStatus].text }}>LKR {Number(r.price_per_night).toLocaleString()}/night</p>
               <button
                 className="btn btn-sm btn-danger mt-3"
                 onClick={(e) => { e.stopPropagation(); handleDelete(r) }}

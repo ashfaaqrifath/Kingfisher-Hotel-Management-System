@@ -3,7 +3,7 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { useAuth } from '../context/AuthContext'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { supabase } from '../lib/supabaseClient'
 import { validateFullName, validateEmail } from '../lib/validation'
 
@@ -107,13 +107,20 @@ export default function Users() {
 
         try {
             if (editingId) {
+                const existingProfile = profiles.find((profile) => profile.id === editingId)
                 const { error } = await supabase
                     .from('profiles')
                     .update({ full_name: fullName, email, role })
                     .eq('id', editingId)
 
                 if (error) throw error
-                await logActivity('Updated user profile', `${fullName} (${role})`)
+                await logActivity(
+                    'Updated user profile',
+                    buildChangeSummary(fullName, existingProfile || {}, { full_name: fullName, email, role }, [
+                        { key: 'role', label: 'Role' },
+                        { key: 'email', label: 'Email' },
+                    ])
+                )
             } else {
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email,
@@ -167,7 +174,7 @@ export default function Users() {
             return
         }
 
-        await logActivity('Deleted user profile', profile.full_name)
+        await logActivity('Deleted user profile', `${profile.full_name} • Role: ${profile.role || '—'}`)
         await load()
     }
 

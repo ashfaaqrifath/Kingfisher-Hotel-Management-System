@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber, validateSalary } from '../lib/validation'
 
 const JOB_ROLES = ['Reception', 'Housekeeping', 'Chef', 'Safari Guide', 'Manager', 'Maintenance']
@@ -68,11 +68,19 @@ export default function Employees() {
 
     const payload = { ...form, full_name: nameValidation.value, email: emailValidation.value, phone: phoneValidation.value, salary: salaryValidation.value }
     if (editingId) {
+      const existingEmployee = employees.find((employee) => employee.id === editingId)
       await supabase.from('employees').update(payload).eq('id', editingId)
-      await logActivity('Updated employee', form.full_name)
+      await logActivity(
+        'Updated employee',
+        buildChangeSummary(payload.full_name, existingEmployee || {}, payload, [
+          { key: 'job_role', label: 'Role' },
+          { key: 'status', label: 'Status' },
+          { key: 'salary', label: 'Salary' },
+        ])
+      )
     } else {
       await supabase.from('employees').insert(payload)
-      await logActivity('Added employee', form.full_name)
+      await logActivity('Added employee', `${payload.full_name} • Role: ${payload.job_role}`)
     }
     setModalOpen(false)
     load()
@@ -81,7 +89,7 @@ export default function Employees() {
   async function handleDelete(emp) {
     if (!confirm(`Remove employee "${emp.full_name}"?`)) return
     await supabase.from('employees').delete().eq('id', emp.id)
-    await logActivity('Deleted employee', emp.full_name)
+    await logActivity('Deleted employee', `${emp.full_name} • Role: ${emp.job_role || '—'}`)
     load()
   }
 

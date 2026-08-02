@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
 import { exportCSV, exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
-import { logActivity } from '../lib/activityLog'
+import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
 
 const EMPTY = { full_name: '', email: '', phone: '', nic: '', address: '', gender: 'Male' }
@@ -69,11 +69,20 @@ export default function Guests() {
 
     const updatedForm = { ...form, full_name: nameValidation.value, email: emailValidation.value, phone: phoneValidation.value }
     if (editingId) {
+      const existingGuest = guests.find((guest) => guest.id === editingId)
       await supabase.from('guests').update(updatedForm).eq('id', editingId)
-      await logActivity('Updated guest', form.full_name)
+      await logActivity(
+        'Updated guest',
+        buildChangeSummary(updatedForm.full_name, existingGuest || {}, updatedForm, [
+          { key: 'gender', label: 'Gender' },
+          { key: 'email', label: 'Email' },
+          { key: 'phone', label: 'Phone' },
+          { key: 'nic', label: 'NIC' },
+        ])
+      )
     } else {
       await supabase.from('guests').insert(updatedForm)
-      await logActivity('Added guest', form.full_name)
+      await logActivity('Added guest', `${updatedForm.full_name} • Gender: ${updatedForm.gender}`)
     }
     setModalOpen(false)
     load()
@@ -82,7 +91,7 @@ export default function Guests() {
   async function handleDelete(g) {
     if (!confirm(`Delete guest "${g.full_name}"? This cannot be undone.`)) return
     await supabase.from('guests').delete().eq('id', g.id)
-    await logActivity('Deleted guest', g.full_name)
+    await logActivity('Deleted guest', `${g.full_name} • Gender: ${g.gender || '—'}`)
     load()
   }
 
@@ -99,7 +108,7 @@ export default function Guests() {
       subtitle="Guest records and contact details"
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…">
-        
+
         <div className="ml-auto flex gap-2">
           <button className="btn btn-secondary" onClick={() => {
             const rows = filtered.map((g) => ({

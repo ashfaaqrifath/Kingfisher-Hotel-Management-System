@@ -5,6 +5,26 @@ import { useAuth } from '../context/AuthContext'
 import { exportPDF as exportReportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 
+function shortenActivityDetail(details = '') {
+  const normalized = details.replace(/\s*·\s*/g, ' • ').replace(/\s+/g, ' ').trim()
+  if (!normalized) return ''
+
+  return normalized.length > 80 ? `${normalized.slice(0, 79).trimEnd()}…` : normalized
+}
+
+function buildActivityText(log) {
+  const action = (log.action || '').trim()
+  const detail = shortenActivityDetail(log.details)
+
+  if (!detail) return action
+  return `${action} • ${detail}`
+}
+
+function formatRole(role) {
+  if (!role) return 'Unknown'
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
 export default function ActivityLog() {
   const { isOwner } = useAuth()
   const [logs, setLogs] = useState([])
@@ -19,10 +39,10 @@ export default function ActivityLog() {
       const [logsRes, profilesRes] = await Promise.all([
         supabase
           .from('activity_logs')
-          .select('*, profiles(full_name)')
+          .select('*, profiles(full_name, role)')
           .order('created_at', { ascending: false })
           .limit(200),
-        supabase.from('profiles').select('id, full_name')
+        supabase.from('profiles').select('id, full_name, role')
       ])
 
       setLogs(logsRes.data || [])
@@ -35,7 +55,7 @@ export default function ActivityLog() {
   const userOptions = useMemo(() => ['All', ...profiles.map((p) => p.id)], [profiles])
 
   const filteredLogs = logs.filter((l) => {
-    const haystack = `${l.profiles?.full_name || ''} ${l.action} ${l.details}`.toLowerCase()
+    const haystack = `${l.profiles?.full_name || ''} ${l.profiles?.role || ''} ${buildActivityText(l)}`.toLowerCase()
     const matchesSearch = haystack.includes(search.toLowerCase())
     const matchesUser = userFilter === 'All' || l.user_id === userFilter
     return matchesSearch && matchesUser
@@ -65,8 +85,8 @@ export default function ActivityLog() {
     const reportRows = rows.map((r) => ({
       Timestamp: new Date(r.created_at).toLocaleString(),
       User: r.profiles?.full_name || 'Unknown',
-      Action: r.action,
-      Details: r.details || '',
+      Role: formatRole(r.profiles?.role),
+      Activity: buildActivityText(r),
     }))
 
     exportReportPDF('Activity Log', reportRows, 'activity-log.pdf', {
@@ -95,26 +115,32 @@ export default function ActivityLog() {
       <div className="card overflow-x-auto p-0">
         <table className="data-table">
           <thead>
-            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Details</th>{isOwner ? <th className="text-right">Delete</th> : null}</tr>
+            <tr><th>Timestamp</th><th>User</th><th>Role</th><th>Activity</th>{isOwner ? <th className="text-right">Delete</th> : null}</tr>
           </thead>
           <tbody>
             {loading && <tr><td colSpan={isOwner ? 5 : 4} className="text-center py-6 text-navy-700">Loading…</td></tr>}
             {!loading && filteredLogs.length === 0 && (
               <tr><td colSpan={isOwner ? 5 : 4} className="text-center py-6 text-navy-700">No matching activity recorded.</td></tr>
             )}
-            {filteredLogs.map((l) => (
-              <tr key={l.id}>
-                <td className="font-mono text-xs">{new Date(l.created_at).toLocaleString()}</td>
-                <td>{l.profiles?.full_name || 'Unknown'}</td>
-                <td className="font-medium">{l.action}</td>
-                <td className="text-navy-700">{l.details}</td>
-                {isOwner ? (
-                  <td className="text-right">
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(l)}>Delete</button>
+            {filteredLogs.map((l) => {
+              const activityText = buildActivityText(l)
+
+              return (
+                <tr key={l.id}>
+                  <td className="font-mono text-xs">{new Date(l.created_at).toLocaleString()}</td>
+                  <td>{l.profiles?.full_name || 'Unknown'}</td>
+                  <td>{formatRole(l.profiles?.role)}</td>
+                  <td className="text-navy-700">
+                    <div className="max-w-[360px] truncate" title={activityText}>{activityText}</div>
                   </td>
-                ) : null}
-              </tr>
-            ))}
+                  {isOwner ? (
+                    <td className="text-right">
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(l)}>Delete</button>
+                    </td>
+                  ) : null}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
