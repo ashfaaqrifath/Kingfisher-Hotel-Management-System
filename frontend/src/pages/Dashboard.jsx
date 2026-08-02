@@ -24,7 +24,7 @@ export default function Dashboard() {
     async function load() {
       const [r, b, i, e] = await Promise.all([
         supabase.from('rooms').select('*').order('room_number'),
-        supabase.from('bookings').select('*, guests(full_name), rooms(room_number)').order('created_at', { ascending: false }),
+        supabase.from('bookings').select('*, guests(full_name, phone), rooms(room_number)').order('created_at', { ascending: false }),
         supabase.from('inventory_items').select('*'),
         supabase.from('employees').select('*'),
       ])
@@ -76,18 +76,59 @@ export default function Dashboard() {
     return last7
   }, [bookings])
 
+  const monthlyRevenueTrend = useMemo(() => {
+    return [...Array(6)].map((_, idx) => {
+      const d = new Date()
+      d.setMonth(d.getMonth() - (5 - idx), 1)
+      const key = d.toISOString().slice(0, 7)
+      const label = d.toLocaleDateString('en-GB', { month: 'short' })
+      const revenue = bookings.reduce((sum, booking) => {
+        const dateValue = booking.check_in || booking.created_at
+        if (!dateValue) return sum
+
+        const bookingDate = new Date(dateValue)
+        if (
+          bookingDate.getMonth() === d.getMonth() &&
+          bookingDate.getFullYear() === d.getFullYear()
+        ) {
+          return sum + Number(booking.total_amount || 0)
+        }
+
+        return sum
+      }, 0)
+
+      return { month: label, revenue }
+    })
+  }, [bookings])
+
   const stockChart = useMemo(
     () => inventory.slice(0, 6).map((i) => ({ name: i.item_name, qty: i.quantity })),
     [inventory]
   )
 
-  const employeeStatusChart = useMemo(() => {
-    const counts = {}
-    employees.forEach((employee) => {
-      counts[employee.status] = (counts[employee.status] || 0) + 1
-    })
-    return Object.entries(counts).map(([name, value]) => ({ name, value }))
-  }, [employees])
+  const upcomingCheckouts = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const maxDate = new Date(today)
+    maxDate.setDate(today.getDate() + 3)
+
+    return bookings
+      .filter((booking) => {
+        if (booking.status === 'Cancelled') return false
+        if (!booking.check_out) return false
+        const date = new Date(`${booking.check_out}T00:00:00`)
+        return date >= today && date <= maxDate
+      })
+      .sort((a, b) => new Date(a.check_out) - new Date(b.check_out))
+      .map((booking) => ({
+        guestName: booking.guests?.full_name || '—',
+        phone: booking.guests?.phone || '—',
+        checkIn: booking.check_in || '—',
+        checkOut: booking.check_out || '—',
+        room: booking.rooms?.room_number || '—',
+      }))
+  }, [bookings])
 
   const inventoryStatusChart = useMemo(() => {
     const lowStock = inventory.filter((item) => item.quantity <= item.low_stock_threshold)
@@ -97,6 +138,14 @@ export default function Dashboard() {
       threshold: item.low_stock_threshold,
     }))
   }, [inventory])
+
+  const employeeStatusChart = useMemo(() => {
+    const counts = {}
+    employees.forEach((employee) => {
+      counts[employee.status] = (counts[employee.status] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+  }, [employees])
 
   return (
     <Layout title="Dashboard" subtitle="Live overview of resort operations">
@@ -148,6 +197,51 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="card lg:col-span-3">
+              <h3 className="font-display font-semibold mb-4">Monthly Revenue Trend</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={monthlyRevenueTrend}>
+                  <CartesianGrid stroke="#E2DDD1" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#1F4E76' }} axisLine={{ stroke: '#E2DDD1' }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#1F4E76' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(value) => [`LKR ${Number(value).toLocaleString()}`, 'Revenue']}
+                    contentStyle={{ fontSize: 12, borderRadius: 4, borderColor: '#E2DDD1' }}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="#129593" strokeWidth={2} dot={{ r: 3, fill: '#0F2B46' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="card lg:col-span-3">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-display font-semibold">Upcoming checkouts (next 3 days)</h3>
+                <span className="text-xs text-navy-700">{upcomingCheckouts.length} booking(s)</span>
+              </div>
+
+              {upcomingCheckouts.length === 0 ? (
+                <p className="text-sm text-navy-700">No checkouts scheduled in the next 3 days.</p>
+              ) : (
+                <div className="space-y-2">
+                  {upcomingCheckouts.map((booking, index) => (
+                    <div key={`${booking.guestName}-${booking.checkOut}-${index}`} className="border border-sand-300 rounded-lg p-3 bg-sand-50">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-navy-950">{booking.guestName}</p>
+                          <p className="text-sm text-navy-700">Phone: {booking.phone}</p>
+                        </div>
+                        <div className="text-sm text-navy-700">
+                          <p>Check-in: {booking.checkIn}</p>
+                          <p>Check-out: {booking.checkOut}</p>
+                          <p>Room: {booking.room}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="card">
               <h3 className="font-display font-semibold mb-4">Inventory snapshot</h3>
               <ResponsiveContainer width="100%" height={220}>

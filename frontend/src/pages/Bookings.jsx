@@ -20,6 +20,7 @@ const EMPTY = {
   check_in: '',
   check_out: '',
   status: 'Booked',
+  discount_amount: '',
   total_amount: '',
 }
 
@@ -73,9 +74,20 @@ export default function Bookings() {
     return room.price_per_night * nightsBetween(checkIn, checkOut)
   }
 
+  function getFinalTotal(roomId, checkIn, checkOut, discountAmount) {
+    const baseTotal = Number(calcTotal(roomId, checkIn, checkOut)) || 0
+    const discount = Number(discountAmount || 0)
+
+    if (!Number.isFinite(discount) || discount < 0) {
+      return baseTotal
+    }
+
+    return Math.max(0, baseTotal - discount)
+  }
+
   function handleRoomOrDateChange(patch) {
     const next = { ...form, ...patch }
-    next.total_amount = calcTotal(next.room_id, next.check_in, next.check_out) || next.total_amount
+    next.total_amount = getFinalTotal(next.room_id, next.check_in, next.check_out, next.discount_amount)
     setForm(next)
     if (formError) setFormError('')
   }
@@ -141,9 +153,14 @@ export default function Bookings() {
       return 'Please choose a room that is currently available.'
     }
 
-    const computedTotal = Number(calcTotal(form.room_id, form.check_in, form.check_out))
+    const discount = Number(form.discount_amount || 0)
+    if (!Number.isFinite(discount) || discount < 0) {
+      return 'Please enter a valid discount amount.'
+    }
+
+    const computedTotal = getFinalTotal(form.room_id, form.check_in, form.check_out, form.discount_amount)
     if (!Number.isFinite(computedTotal) || computedTotal <= 0) {
-      return 'The booking total could not be calculated. Please verify the room and stay dates.'
+      return 'The booking total could not be calculated. Please verify the room, stay dates, and discount amount.'
     }
 
     return ''
@@ -190,7 +207,7 @@ export default function Bookings() {
       check_in: form.check_in,
       check_out: form.check_out,
       status: form.status,
-      total_amount: Number(calcTotal(form.room_id, form.check_in, form.check_out)) || 0,
+      total_amount: getFinalTotal(form.room_id, form.check_in, form.check_out, form.discount_amount),
     }
 
     const { error: bookingError } = await supabase.from('bookings').insert(payload)
@@ -436,9 +453,21 @@ export default function Bookings() {
               </div>
 
               <div>
+                <label className="label">Discount amount (LKR)</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input"
+                  value={form.discount_amount}
+                  onChange={(e) => handleRoomOrDateChange({ discount_amount: e.target.value })}
+                />
+                
+              </div>
+
+              <div>
                 <label className="label">Total amount (LKR)</label>
-                <input type="number" min="0" className="input" value={form.total_amount} onChange={(e) => setForm({ ...form, total_amount: e.target.value })} />
-                <p className="text-xs text-navy-700 mt-1">Auto-calculated from room price × nights — edit if needed.</p>
+                <input type="number" min="0" className="input" value={form.total_amount} readOnly />
+                <p className="text-xs text-navy-700 mt-1">Auto-calculated from room price × nights and the discount amount.</p>
               </div>
             </div>
           </div>
