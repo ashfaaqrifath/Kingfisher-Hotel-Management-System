@@ -244,7 +244,7 @@ export default function Users() {
                                 <td className="text-right">
                                     {isOwner ? (
                                         <div className="flex justify-end gap-2">
-                                            <button className="btn btn-sm btn-secondary" onClick={() => openEdit(profile)}>
+                                            <button className="btn btn-sm btn-primary" onClick={() => openEdit(profile)}>
                                                 Edit
                                             </button>
                                             <button className="btn btn-sm btn-danger" onClick={() => handleDelete(profile)}>

@@ -1,83 +1,90 @@
-# Kingfisher Hotel Management Dashboard
+# Kingfisher Hotel Management System
 
-Web-based analytics dashboard for Kingfisher Beach Resort, Yala.
-React + Tailwind CSS on the frontend, Supabase (Postgres + Auth) as the backend.
+A hotel operations dashboard for managing rooms, bookings, guests, employees, and inventory with a React frontend and Supabase backend.
 
-## Folder structure
+## Tech stack
 
-```
-kingfisher-hms/
-├── supabase/
-│   └── schema.sql          ← run this in Supabase SQL editor first
-├── frontend/
-│   ├── src/
-│   │   ├── pages/          Dashboard, Guests, Employees, Rooms, Bookings, Inventory, Reports, ActivityLog, Login
-│   │   ├── components/     Sidebar, Layout, Modal, StatCard, Toolbar, ProtectedRoute
-│   │   ├── context/        AuthContext (session + role)
-│   │   ├── lib/            supabaseClient, activityLog helper
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── index.html
-│   ├── tailwind.config.js
-│   ├── vite.config.js
-│   └── package.json
-└── README.md
-```
+- Frontend: React + Vite + Tailwind CSS
+- Backend/auth: Supabase (PostgreSQL + Auth)
+- Reporting: PDF export support
 
-## 1. Set up Supabase
+## Project structure
 
-1. Create a free project at https://supabase.com
-2. Open **SQL Editor** → paste the contents of `supabase/schema.sql` → Run.
-   This creates all tables, RLS policies, triggers, and seeds sample rooms/inventory.
-3. Go to **Authentication → Users** → add your first user (email + password).
-4. In **SQL Editor**, promote that user to admin:
-   ```sql
-   update profiles set role = 'admin' where id = '<paste-user-uuid-here>';
-   ```
-5. Add more users the same way for your other 4 team members (they default to `staff`).
+- `docs/schema.sql` — Supabase database schema and seed data
+- `frontend/` — React application
+- `frontend/src/pages/` — Dashboard, bookings, rooms, guests, employees, inventory, reports, login
+- `frontend/src/components/` — shared UI components
+- `frontend/src/lib/` — Supabase client and helpers
 
-## 2. Run the frontend
+## Quick start
 
-```bash
-cd frontend
-npm install
-cp .env.example .env
+### 1) Set up the database
+
+1. Create a Supabase project.
+2. Open the Supabase SQL Editor.
+3. Run the contents of `docs/schema.sql`.
+4. This will create the tables, policies, seed data, and booking-to-room sync trigger.
+
+### 2) Create your first login user
+
+1. Go to Supabase Auth → Users.
+2. Add a user with email/password.
+3. In SQL Editor, update that user profile role to `owner` or `admin`.
+
+Example:
+
+```sql
+UPDATE profiles
+SET role = 'owner'
+WHERE id = '<auth-user-id>';
 ```
 
-Edit `.env` and paste your Supabase project URL + anon key
-(Project Settings → API in the Supabase dashboard):
+### 3) Configure the frontend environment
 
-```
+Inside `frontend/`, create a `.env` file:
+
+```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-Then:
+You can get these values from Supabase Dashboard → Project Settings → API.
+
+### 4) Install and run
 
 ```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and log in with the user you created.
+Then open:
 
-## Features implemented
+```text
+http://localhost:5173
+```
 
-- **Auth**: Supabase Auth login, role-based access (Admin / Staff)
-- **Dashboard**: KPI cards, 7-day booking trend chart, room status donut, inventory bar chart, live room key-board
-- **Guests**: full CRUD, search
-- **Employees**: full CRUD, search (admin only)
-- **Rooms**: card-grid view, live status colors, full CRUD
-- **Bookings**: create booking (auto-calculates total from nights × room price), check-in / check-out / cancel workflow, auto-syncs room status via a DB trigger
-- **Inventory**: full CRUD, low-stock flagging and filter
-- **Reports**: date-range filtered booking report + inventory report, CSV and PDF export
-- **Activity Log**: audit trail of every create/update/delete action (admin only)
+## Main features
 
-## Design notes
+- Authentication with role-based access
+- Dashboard with occupancy and booking insights
+- Guest, room, employee, booking, and inventory management
+- Booking workflow with check-in, check-out, and cancellation
+- Inventory low-stock monitoring
+- Activity log for admin visibility
+- Reports with export options
 
-Flat, no gradients — navy (`#0F2B46`) + teal (`#0E7C7B`) on a warm sand background, `Space Grotesk` for headings, `Inter` for body text, `IBM Plex Mono` for numbers/data. The room grid on the Dashboard and Rooms page mimics a physical hotel key-board, color-coded by status.
+## Useful commands
 
-## Notes for your report
+```bash
+cd frontend
+npm run dev
+npm run build
+npm run test
+```
 
-- Database: Supabase (PostgreSQL) — matches the "Supabase" tech choice in your proposal.
-- Room status updates automatically via a Postgres trigger when a booking is checked in/out or cancelled — no manual sync needed.
-- Row Level Security is enabled on every table; only authenticated staff can read/write operational data, and only admins can see the Activity Log.
+## Notes
+
+- The app expects the database schema from `docs/schema.sql` to be loaded first.
+- The login user must have a matching `profiles` row with a valid role.
+- Role defaults are handled by the schema, but the first owner/admin account should be promoted manually in SQL.

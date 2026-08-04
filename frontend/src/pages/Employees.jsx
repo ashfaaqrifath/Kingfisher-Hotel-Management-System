@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
-import { exportCSV, exportPDF } from '../lib/reportUtils'
+import { exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber, validateSalary } from '../lib/validation'
@@ -132,17 +132,6 @@ export default function Employees() {
               Hired: e.hire_date,
               Status: e.status,
             }))
-            exportCSV(rows, 'employees-report.csv')
-          }} disabled={filtered.length === 0}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={() => {
-            const rows = filtered.map((e) => ({
-              Name: e.full_name,
-              Role: e.job_role,
-              Phone: e.phone || '—',
-              'Salary (LKR)': e.salary,
-              Hired: e.hire_date,
-              Status: e.status,
-            }))
             const statusBreakdown = ['Active', 'On Leave', 'Inactive'].map((status) => ({
               label: status,
               value: filtered.filter((e) => e.status === status).length,
@@ -163,7 +152,7 @@ export default function Employees() {
                 { type: 'bar', title: 'Role distribution', data: Object.entries(roleBreakdown).map(([label, value]) => ({ label, value })) },
               ],
             })
-          }} disabled={filtered.length === 0}>Export PDF</button>
+          }} disabled={filtered.length === 0}>Generate Report</button>
         </div>
       </Toolbar>
 
@@ -189,7 +178,7 @@ export default function Employees() {
                 <td><span className={`badge ${statusBadge(emp.status)}`}>{emp.status}</span></td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="btn btn-sm btn-secondary" onClick={() => openEdit(emp)}>Edit</button>
+                    <button className="btn btn-sm btn-primary" onClick={() => openEdit(emp)}>Edit</button>
                     <button className="btn btn-sm btn-danger" onClick={() => handleDelete(emp)}>Delete</button>
                   </div>
                 </td>

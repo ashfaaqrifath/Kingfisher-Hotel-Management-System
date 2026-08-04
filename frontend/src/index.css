@@ -10,7 +10,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: "Space Grotesk", sans-serif;
 }
 
@@ -41,6 +44,7 @@ h1, h2, h3, h4 {
   border-radius: 10px;
   font-size: 0.8rem;
 }
+
 .btn-primary:hover {
   background-color: #163c5e;
 }
@@ -53,6 +57,24 @@ h1, h2, h3, h4 {
 
 .btn-secondary:hover {
   background-color: #efebe2;
+}
+
+.btn-success {
+  background-color: #1f8a55;
+  color: #ffffff;
+}
+
+.btn-success:hover {
+  background-color: #176b41;
+}
+
+.btn-warning {
+  background-color: #c97a2b;
+  color: #ffffff;
+}
+
+.btn-warning:hover {
+  background-color: #a96214;
 }
 
 .btn-danger {

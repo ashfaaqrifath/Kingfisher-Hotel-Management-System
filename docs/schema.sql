@@ -71,11 +71,14 @@ create table if not exists employees (
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
   room_number text not null unique,
-  room_type text not null check (room_type in ('Standard','Deluxe','Suite')),
+  room_type text not null check (room_type in ('Standard', 'Deluxe', 'Suite')),
   price_per_night numeric(10,2) not null default 0,
-  status text not null check (status in ('Available','Booked','Occupied','Maintenance')) default 'Available',
+  status text not null check (status in ('Available', 'Booked', 'Occupied', 'Maintenance')) default 'Available',
   created_at timestamptz default now()
 );
+
+create index if not exists idx_rooms_room_number on rooms(room_number);
+create index if not exists idx_rooms_status on rooms(status);
 
 -- ------------------------------------------------------------
 -- 5. BOOKINGS
@@ -86,11 +89,16 @@ create table if not exists bookings (
   room_id uuid references rooms(id) on delete set null,
   check_in date not null,
   check_out date not null,
-  status text not null check (status in ('Booked','Checked In','Checked Out','Cancelled')) default 'Booked',
+  status text not null check (status in ('Booked', 'Checked In', 'Checked Out', 'Cancelled')) default 'Booked',
   total_amount numeric(10,2) default 0,
   created_at timestamptz default now(),
   constraint valid_dates check (check_out > check_in)
 );
+
+create index if not exists idx_bookings_guest_id on bookings(guest_id);
+create index if not exists idx_bookings_room_id on bookings(room_id);
+create index if not exists idx_bookings_status on bookings(status);
+create index if not exists idx_bookings_dates on bookings(check_in, check_out);
 
 -- Keep room status in sync with booking status
 create or replace function sync_room_status()
@@ -118,13 +126,16 @@ create trigger on_booking_status_change
 create table if not exists inventory_items (
   id uuid primary key default gen_random_uuid(),
   item_name text not null,
-  category text not null check (category in ('Linen','Toiletries','Food & Beverage','Kitchen','Maintenance','Office')),
+  category text not null check (category in ('Linen', 'Toiletries', 'Food & Beverage', 'Kitchen', 'Maintenance', 'Office')),
   quantity int not null default 0,
   unit text not null default 'pcs',
   low_stock_threshold int not null default 10,
   unit_price numeric(10,2) default 0,
   updated_at timestamptz default now()
 );
+
+create index if not exists idx_inventory_items_category on inventory_items(category);
+create index if not exists idx_inventory_items_low_stock on inventory_items(quantity, low_stock_threshold);
 
 -- ------------------------------------------------------------
 -- 7. ACTIVITY LOG (admin-only audit trail)
@@ -182,28 +193,7 @@ create policy "inventory_all_authenticated" on inventory_items for all using (au
 create policy "activity_log_select_admin_or_owner" on activity_logs for select using (is_admin_or_owner());
 create policy "activity_log_insert_authenticated" on activity_logs for insert with check (auth.role() = 'authenticated');
 
--- ============================================================
--- SEED DATA (sample rooms so the dashboard isn't empty on first run)
--- ============================================================
-insert into rooms (room_number, room_type, price_per_night, status) values
-  ('101','Standard',12000,'Available'),
-  ('102','Standard',12000,'Available'),
-  ('103','Deluxe',18000,'Available'),
-  ('104','Deluxe',18000,'Occupied'),
-  ('201','Suite',28000,'Available'),
-  ('202','Suite',28000,'Maintenance'),
-  ('301','Beach Villa',45000,'Available'),
-  ('302','Beach Villa',45000,'Available')
-on conflict (room_number) do nothing;
 
-insert into inventory_items (item_name, category, quantity, unit, low_stock_threshold, unit_price) values
-  ('Bath Towels','Linen',120,'pcs',30,850),
-  ('Bedsheets (King)','Linen',60,'pcs',20,2200),
-  ('Shampoo Bottles','Toiletries',8,'pcs',25,180),
-  ('Rice (Basmati)','Food & Beverage',40,'kg',15,320),
-  ('Cooking Gas Cylinders','Kitchen',3,'cylinders',4,4500),
-  ('Printer Paper','Office',5,'reams',5,950)
-on conflict do nothing;
 
 -- Note: create the first owner account once in Supabase Auth
 -- (Project > Authentication > Users > Add user), then set its profile row to role 'owner'.
@@ -211,3 +201,7 @@ on conflict do nothing;
 -- insert into public.profiles (id, full_name, email, role)
 -- values ('<auth-user-id>', 'Owner Name', 'owner@example.com', 'owner')
 -- on conflict (id) do update set full_name = excluded.full_name, email = excluded.email, role = 'owner';
+
+-- Optional: when the live database is already migrated, this file is meant to be
+-- a "schema source of truth" for handoff/recovery and should match the current
+-- project data model rather than a stale starter definition.

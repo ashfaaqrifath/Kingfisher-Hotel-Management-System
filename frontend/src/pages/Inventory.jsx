@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
-import { exportCSV, exportPDF } from '../lib/reportUtils'
+import { exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { buildChangeSummary, logActivity } from '../lib/activityLog'
 
@@ -95,16 +95,6 @@ export default function Inventory() {
               'Unit Price (LKR)': i.unit_price,
               Status: i.quantity <= i.low_stock_threshold ? 'Low stock' : 'In stock',
             }))
-            exportCSV(rows, 'inventory-report.csv')
-          }} disabled={filtered.length === 0}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={() => {
-            const rows = filtered.map((i) => ({
-              Item: i.item_name,
-              Category: i.category,
-              Quantity: `${i.quantity} ${i.unit}`,
-              'Unit Price (LKR)': i.unit_price,
-              Status: i.quantity <= i.low_stock_threshold ? 'Low stock' : 'In stock',
-            }))
             const statusBreakdown = [
               { label: 'Low stock', value: filtered.filter((i) => i.quantity <= i.low_stock_threshold).length },
               { label: 'Healthy', value: filtered.filter((i) => i.quantity > i.low_stock_threshold).length },
@@ -117,7 +107,7 @@ export default function Inventory() {
               ],
               charts: [{ type: 'pie', title: 'Stock health', data: statusBreakdown.filter((item) => item.value > 0) }],
             })
-          }} disabled={filtered.length === 0}>Export PDF</button>
+          }} disabled={filtered.length === 0}>Generate Report</button>
         </div>
       </Toolbar>
 
@@ -148,7 +138,7 @@ export default function Inventory() {
                   </td>
                   <td className="text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="btn btn-sm btn-secondary" onClick={() => openEdit(i)}>Edit</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => openEdit(i)}>Edit</button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(i)}>Delete</button>
                     </div>
                   </td>

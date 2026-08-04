@@ -33,7 +33,7 @@ export default function Login() {
             One dashboard for bookings, rooms, guests, and stock.
           </p>
           <p className="text-sand-300 text-sm mt-4 max-w-sm">
-            Kingfisher Hotel Management System · v1.0
+            Kingfisher Hotel Management System · v1.0.1
           </p>
         </div>
         <p className="text-xs text-sand-300">© Developed by Group CS03</p>

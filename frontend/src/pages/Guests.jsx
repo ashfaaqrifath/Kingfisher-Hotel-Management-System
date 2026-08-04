@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
-import { exportCSV, exportPDF } from '../lib/reportUtils'
+import { exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
@@ -118,16 +118,6 @@ export default function Guests() {
               NIC: g.nic || '—',
               Gender: g.gender,
             }))
-            exportCSV(rows, 'guests-report.csv')
-          }} disabled={filtered.length === 0}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={() => {
-            const rows = filtered.map((g) => ({
-              Name: g.full_name,
-              Email: g.email || '—',
-              Phone: g.phone || '—',
-              NIC: g.nic || '—',
-              Gender: g.gender,
-            }))
             const genderBreakdown = ['Male', 'Female', 'Other'].map((gender) => ({
               label: gender,
               value: filtered.filter((g) => g.gender === gender).length,
@@ -140,7 +130,7 @@ export default function Guests() {
               ],
               charts: [{ type: 'pie', title: 'Gender mix', data: genderBreakdown.filter((item) => item.value > 0) }],
             })
-          }} disabled={filtered.length === 0}>Export PDF</button>
+          }} disabled={filtered.length === 0}>Generate Report</button>
         </div>
       </Toolbar>
 
@@ -165,7 +155,7 @@ export default function Guests() {
                 <td>{g.gender}</td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="btn btn-sm btn-secondary" onClick={() => openEdit(g)}>Edit</button>
+                    <button className="btn btn-sm btn-primary" onClick={() => openEdit(g)}>Edit</button>
                     <button className="btn btn-sm btn-danger" onClick={() => handleDelete(g)}>Delete</button>
                   </div>
                 </td>

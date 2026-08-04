@@ -83,13 +83,13 @@ describe('Rooms module', () => {
   it('TC-ROOM-06 / TC-S6-06: room search matches by room number or room type substring', async () => {
     const { data: created } = await client
       .from('rooms')
-      .insert({ room_number: `${TEST_PREFIX}905`, room_type: 'Beach Villa', price_per_night: 40000 })
+      .insert({ room_number: `${TEST_PREFIX}905`, room_type: 'Suite', price_per_night: 40000 })
       .select()
       .single()
     cleanup.track('rooms', created.id)
 
     const { data: allRooms } = await client.from('rooms').select()
-    const term = 'beach villa'
+    const term = 'suite'
     const bySearch = allRooms.filter(
       (r) =>
         String(r.room_number).toLowerCase().includes(term) ||

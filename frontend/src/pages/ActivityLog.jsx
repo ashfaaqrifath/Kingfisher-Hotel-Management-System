@@ -32,6 +32,8 @@ export default function ActivityLog() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [userFilter, setUserFilter] = useState('All')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -58,7 +60,12 @@ export default function ActivityLog() {
     const haystack = `${l.profiles?.full_name || ''} ${l.profiles?.role || ''} ${buildActivityText(l)}`.toLowerCase()
     const matchesSearch = haystack.includes(search.toLowerCase())
     const matchesUser = userFilter === 'All' || l.user_id === userFilter
-    return matchesSearch && matchesUser
+
+    const createdAt = l.created_at?.slice(0, 10) || ''
+    const matchesDateFrom = !dateFrom || createdAt >= dateFrom
+    const matchesDateTo = !dateTo || createdAt <= dateTo
+
+    return matchesSearch && matchesUser && matchesDateFrom && matchesDateTo
   })
 
   async function handleDelete(log) {
@@ -73,6 +80,23 @@ export default function ActivityLog() {
     }
 
     setLogs((current) => current.filter((item) => item.id !== log.id))
+  }
+
+  async function handleClearLogs() {
+    if (!isOwner) {
+      alert('Only the owner can clear activity logs.')
+      return
+    }
+
+    if (!confirm('Delete all activity logs? This cannot be undone.')) return
+
+    const { error } = await supabase.from('activity_logs').delete().not('id', 'is', null)
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setLogs([])
   }
 
   function exportPDF(rows) {
@@ -99,7 +123,18 @@ export default function ActivityLog() {
   }
 
   return (
-    <Layout title="Activity Log" subtitle="Audit trail of all system actions">
+    <Layout
+      title="Activity Log"
+      subtitle="Audit trail of all system actions"
+      actions={(
+        <div className="flex gap-2">
+          {isOwner && (
+            <button className="btn btn-danger" onClick={handleClearLogs}>Clear logs</button>
+          )}
+          <button className="btn btn-secondary" onClick={() => exportPDF(filteredLogs)} disabled={filteredLogs.length === 0}>Generate Report</button>
+        </div>
+      )}
+    >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search user, action, or details…">
         <select className="input max-w-[260px]" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}>
           <option value="All">All users</option>
@@ -107,8 +142,11 @@ export default function ActivityLog() {
             <option key={p.id} value={p.id}>{p.full_name}</option>
           ))}
         </select>
-        <div className="ml-auto flex gap-2">
-          <button className="btn btn-secondary" onClick={() => exportPDF(filteredLogs)} disabled={filteredLogs.length === 0}>Export PDF</button>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-navy-700">From</label>
+          <input type="date" className="input max-w-[150px]" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <label className="text-xs text-navy-700">To</label>
+          <input type="date" className="input max-w-[150px]" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
       </Toolbar>
 

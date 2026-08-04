@@ -11,9 +11,9 @@ const EMPTY = { room_number: '', room_type: 'Standard', price_per_night: '', sta
 
 const STATUS_STYLE = {
   Available: { border: 'border-moss', bg: '#c7f4c7', text: '#1f8a55' },
-  Booked: { border: 'border-sky', bg: '#dbeafe', text: '#1d4ed8' },
+  Booked: { border: 'border-sky', bg: '#dbeafe', text: '#1d4fd8d1' },
   Occupied: { border: 'border-rust', bg: '#f5ba9f', text: '#b3432b' },
-  Maintenance: { border: 'border-amber', bg: '#ffedd3', text: '#c97a2b' },
+  Maintenance: { border: 'border-amber', bg: '#d1d1d1', text: '#06060694' },
 }
 
 export default function Rooms() {

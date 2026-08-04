@@ -26,11 +26,11 @@ vi.mock('jspdf', () => ({
 }))
 
 import { adminClient, staffClient } from './helpers'
-import { exportPDF, exportCSV } from '../lib/reportUtils'
+import { exportPDF } from '../lib/reportUtils'
 
 // TC-S8-01..06
 // Note: there is no dedicated /reports route or Reports.jsx page in this
-// codebase. Reporting (CSV/PDF export) is inline inside Bookings.jsx,
+// codebase. Reporting (PDF export) is inline inside Bookings.jsx,
 // Guests.jsx, Employees.jsx and Inventory.jsx. TC-S8-03 and TC-S8-05 are
 // adapted below to check against what actually exists, and the gaps
 // relative to the originally stated requirement are reported explicitly.
@@ -74,6 +74,35 @@ describe('Reports & dashboard', () => {
     last7.forEach((entry) => expect(entry.bookings).toBeGreaterThanOrEqual(0))
   })
 
+  it('TC-S8-02A: dashboard room status summary models a Booked bucket in the pie chart', () => {
+    const source = readFileSync(resolve(SRC_ROOT, 'pages/Dashboard.jsx'), 'utf-8')
+    const hasBookedColor = /Booked:\s*'#/.test(source)
+    const hasBookedBucket = /Booked:\s*0/.test(source)
+
+    expect(hasBookedColor).toBe(true)
+    expect(hasBookedBucket).toBe(true)
+  })
+
+  it('TC-S8-02B: dashboard booking trend is year-filtered like the revenue chart', () => {
+    const source = readFileSync(resolve(SRC_ROOT, 'pages/Dashboard.jsx'), 'utf-8')
+    const usesBookingYearState = /selectedBookingYear/.test(source)
+    const hasYearFilterSelector = /Year/.test(source)
+    const buildsYearlyBookingTrend = /bookingYears|new Date\(selectedBookingYear/.test(source)
+
+    expect(usesBookingYearState).toBe(true)
+    expect(hasYearFilterSelector).toBe(true)
+    expect(buildsYearlyBookingTrend).toBe(true)
+  })
+
+  it('TC-S8-02C: dashboard occupancy rate is derived from active bookings rather than stale room status text', () => {
+    const source = readFileSync(resolve(SRC_ROOT, 'pages/Dashboard.jsx'), 'utf-8')
+    const usesActiveBookingOccupancy = /activeBooking|Checked In|check_out/.test(source)
+    const stillUsesRoomStatusOccupancy = /status === 'Occupied'/.test(source)
+
+    expect(usesActiveBookingOccupancy).toBe(true)
+    expect(stillUsesRoomStatusOccupancy).toBe(false)
+  })
+
   it('TC-S8-03: booking report has a status filter but no date-range filter', () => {
     const source = readFileSync(resolve(SRC_ROOT, 'pages/Bookings.jsx'), 'utf-8')
     const hasStatusFilter = /statusFilter/.test(source)
@@ -86,10 +115,9 @@ describe('Reports & dashboard', () => {
     expect(hasDateRangeFilter).toBe(true)
   })
 
-  it('TC-S8-04: the PDF/CSV export functions in reportUtils execute without throwing', () => {
+  it('TC-S8-04: the PDF export function in reportUtils executes without throwing', () => {
     textMock.mockClear()
     const rows = [{ Name: 'Test Row', Value: 1 }]
-    expect(() => exportCSV(rows, 'test-report.csv')).not.toThrow()
     expect(() => exportPDF('Test Report', rows, 'test-report.pdf', {
       summary: [{ label: 'Total', value: 1 }],
       charts: [

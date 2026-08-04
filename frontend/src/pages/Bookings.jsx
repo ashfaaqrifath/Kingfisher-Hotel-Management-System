@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toolbar from '../components/Toolbar'
-import { exportCSV, exportPDF } from '../lib/reportUtils'
+import { exportPDF } from '../lib/reportUtils'
 import { supabase } from '../lib/supabaseClient'
 import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
@@ -47,6 +47,7 @@ export default function Bookings() {
   const [hiddenStatusFilter, setHiddenStatusFilter] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
+  const [editingId, setEditingId] = useState(null)
   const [formError, setFormError] = useState('')
   const [loading, setLoading] = useState(true)
   const [guestSearch, setGuestSearch] = useState('')
@@ -59,7 +60,44 @@ export default function Bookings() {
       supabase.from('guests').select('id, full_name, email, phone, nic, address, gender').order('full_name'),
       supabase.from('rooms').select('id, room_number, room_type, price_per_night, status').order('room_number'),
     ])
-    setBookings(b.data || [])
+
+    const bookingRows = b.data || []
+    const todaysDate = new Date()
+    todaysDate.setHours(0, 0, 0, 0)
+
+    const autoCheckoutIds = bookingRows
+      .filter((booking) => {
+        if (['Cancelled', 'Checked Out'].includes(booking.status)) return false
+        if (!booking.check_out) return false
+
+        const checkoutDate = new Date(`${booking.check_out}T00:00:00`)
+        return checkoutDate < todaysDate
+      })
+      .map((booking) => booking.id)
+
+    if (autoCheckoutIds.length > 0) {
+      await Promise.all(
+        autoCheckoutIds.map(async (bookingId) => {
+          const booking = bookingRows.find((item) => item.id === bookingId)
+          if (!booking) return
+
+          await supabase.from('bookings').update({ status: 'Checked Out' }).eq('id', bookingId)
+          await logActivity(
+            'Booking Checked Out',
+            `${booking.guests?.full_name || 'Guest'} • Room ${booking.rooms?.room_number || '—'} • ${booking.status || '—'} → Checked Out`
+          )
+        })
+      )
+    }
+
+    const normalizedBookings = bookingRows.map((booking) => {
+      if (autoCheckoutIds.includes(booking.id)) {
+        return { ...booking, status: 'Checked Out' }
+      }
+      return booking
+    })
+
+    setBookings(normalizedBookings)
     setGuests(g.data || [])
     setRooms(r.data || [])
     setLoading(false)
@@ -69,6 +107,30 @@ export default function Bookings() {
 
   function openCreate() {
     setForm({ ...EMPTY })
+    setEditingId(null)
+    setGuestSearch('')
+    setFormError('')
+    setModalOpen(true)
+  }
+
+  function openEdit(booking) {
+    const guest = booking.guests || {}
+    setForm({
+      guest_id: booking.guest_id || '',
+      full_name: guest.full_name || '',
+      email: guest.email || '',
+      phone: guest.phone || '',
+      nic: guest.nic || '',
+      address: guest.address || '',
+      gender: guest.gender || 'Male',
+      room_id: booking.room_id || '',
+      check_in: booking.check_in || '',
+      check_out: booking.check_out || '',
+      status: booking.status || 'Booked',
+      discount_amount: getDiscountAmount(booking.room_id, booking.check_in, booking.check_out, booking.total_amount),
+      total_amount: booking.total_amount ?? '',
+    })
+    setEditingId(booking.id)
     setGuestSearch('')
     setFormError('')
     setModalOpen(true)
@@ -89,6 +151,17 @@ export default function Bookings() {
     }
 
     return Math.max(0, baseTotal - discount)
+  }
+
+  function getDiscountAmount(roomId, checkIn, checkOut, totalAmount) {
+    const baseTotal = Number(calcTotal(roomId, checkIn, checkOut)) || 0
+    const total = Number(totalAmount || 0)
+
+    if (!Number.isFinite(baseTotal) || baseTotal <= 0) {
+      return 0
+    }
+
+    return Math.max(0, Math.round(baseTotal - total))
   }
 
   function handleRoomOrDateChange(patch) {
@@ -155,11 +228,15 @@ export default function Bookings() {
       return 'The selected room could not be found. Please choose another room.'
     }
 
-    if (getDerivedRoomStatus(selectedRoom.id) !== 'Available') {
+    if (getDerivedRoomStatus(selectedRoom.id, editingId) !== 'Available') {
       return 'Please choose a room that is currently available.'
     }
 
     const hasConflict = bookings.some((booking) => {
+      if (booking.id === editingId) {
+        return false
+      }
+
       if (!booking?.room_id || booking.room_id !== form.room_id) {
         return false
       }
@@ -235,6 +312,31 @@ export default function Bookings() {
       total_amount: getFinalTotal(form.room_id, form.check_in, form.check_out, form.discount_amount),
     }
 
+    if (editingId) {
+      const existingBooking = bookings.find((booking) => booking.id === editingId)
+      const { error: bookingError } = await supabase.from('bookings').update(payload).eq('id', editingId)
+      if (bookingError) {
+        setFormError(`Could not update the booking: ${bookingError.message}`)
+        return
+      }
+
+      const roomName = rooms.find((r) => r.id === form.room_id)?.room_number || '—'
+      const bookingGuestName = guests.find((g) => g.id === guestId)?.full_name || form.full_name || 'Guest'
+      await logActivity(
+        'Updated booking',
+        buildChangeSummary(bookingGuestName, existingBooking || {}, payload, [
+          { key: 'room_id', label: 'Room' },
+          { key: 'check_in', label: 'Check-in' },
+          { key: 'check_out', label: 'Check-out' },
+          { key: 'status', label: 'Status' },
+        ])
+      )
+      setFormError('')
+      setModalOpen(false)
+      load()
+      return
+    }
+
     const { error: bookingError } = await supabase.from('bookings').insert(payload)
     if (bookingError) {
       setFormError(`Could not create the booking: ${bookingError.message}`)
@@ -259,6 +361,7 @@ export default function Bookings() {
 
   async function updateStatus(booking, status) {
     if (status === 'Checked In' && !canCheckIn(booking)) {
+      alert('This booking cannot be checked in yet because the check-in date has not arrived.')
       return
     }
 
@@ -328,7 +431,7 @@ export default function Bookings() {
     })
   }
 
-  function getDerivedRoomStatus(roomId) {
+  function getDerivedRoomStatus(roomId, ignoreBookingId = null) {
     const room = rooms.find((r) => r.id === roomId)
     if (!room) return 'Available'
     if (room.status === 'Maintenance') return 'Maintenance'
@@ -337,6 +440,7 @@ export default function Bookings() {
     now.setHours(0, 0, 0, 0)
 
     const activeBooking = bookings.find((booking) => {
+      if (ignoreBookingId && booking.id === ignoreBookingId) return false
       if (!booking.room_id || booking.room_id !== roomId) return false
       if (['Cancelled', 'Checked Out'].includes(booking.status)) return false
 
@@ -350,7 +454,7 @@ export default function Bookings() {
   }
 
   const availableRooms = rooms
-    .map((room) => ({ ...room, derivedStatus: getDerivedRoomStatus(room.id) }))
+    .map((room) => ({ ...room, derivedStatus: getDerivedRoomStatus(room.id, editingId) }))
     .filter((room) => room.derivedStatus === 'Available')
 
   const guestSearchResults = guests.filter((guest) => {
@@ -394,17 +498,6 @@ export default function Bookings() {
               Status: b.status,
               'Total (LKR)': b.total_amount,
             }))
-            exportCSV(rows, 'bookings-report.csv')
-          }} disabled={filtered.length === 0}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={() => {
-            const rows = filtered.map((b) => ({
-              Guest: b.guests?.full_name || '—',
-              Room: b.rooms?.room_number || '—',
-              'Check-in': b.check_in,
-              'Check-out': b.check_out,
-              Status: b.status,
-              'Total (LKR)': b.total_amount,
-            }))
             const statusBreakdown = ['Booked', 'Checked In', 'Checked Out', 'Cancelled'].map((status) => ({
               label: status,
               value: filtered.filter((b) => b.status === status).length,
@@ -429,7 +522,7 @@ export default function Bookings() {
                 { type: 'line', title: 'Recent stay trend', data: trend },
               ],
             })
-          }} disabled={filtered.length === 0}>Export PDF</button>
+          }} disabled={filtered.length === 0}>Generate Report</button>
         </div>
       </Toolbar>
 
@@ -447,33 +540,45 @@ export default function Bookings() {
             )}
             {filtered.map((b) => (
               <tr key={b.id}>
-                <td className="font-medium">{b.guests?.full_name || '—'}</td>
+                <td className="font-medium">
+                  <button
+                    type="button"
+                    className="text-left font-medium text-navy-950 underline underline-offset-2 decoration-1 hover:text-navy-700"
+                    onClick={() => openInvoice(b)}
+                  >
+                    {b.guests?.full_name || '—'}
+                  </button>
+                </td>
                 <td>{b.rooms?.room_number || '—'}</td>
                 <td>{b.check_in}</td>
                 <td>{b.check_out}</td>
                 <td><span className={`badge ${STATUS_BADGE[b.status]}`}>{b.status}</span></td>
                 <td className="text-right whitespace-nowrap">
                   <div className="flex justify-end gap-2">
-                    {b.status !== 'Cancelled' && (
-                      <button className="btn btn-sm btn-secondary" onClick={() => openInvoice(b)}>Invoice</button>
-                    )}
+                    <button className="btn btn-sm btn-primary" onClick={() => openEdit(b)}>Edit</button>
                     {b.status === 'Booked' && (
                       <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => updateStatus(b, 'Checked In')}
-                        disabled={!canCheckIn(b)}
+                        className="btn btn-sm btn-success"
+                        onClick={() => {
+                          if (!canCheckIn(b)) {
+                            alert('This booking cannot be checked in yet because the check-in date has not arrived.')
+                            return
+                          }
+
+                          updateStatus(b, 'Checked In')
+                        }}
                         title={canCheckIn(b) ? 'Check in booking' : 'Check-in is only available on or after the booking check-in date.'}
                       >
                         Check in
                       </button>
                     )}
                     {b.status === 'Checked In' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => updateStatus(b, 'Checked Out')}>Check out</button>
+                      <button className="btn btn-sm btn-warning" onClick={() => updateStatus(b, 'Checked Out')}>Check out</button>
                     )}
                     {['Booked', 'Checked In'].includes(b.status) && (
                       <button className="btn btn-sm btn-danger" onClick={() => updateStatus(b, 'Cancelled')}>Cancel</button>
                     )}
-                    {b.status === 'Cancelled' && isAdmin && (
+                    {['Cancelled', 'Checked Out'].includes(b.status) && isAdmin && (
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(b)}>Delete</button>
                     )}
                   </div>
@@ -557,13 +662,13 @@ export default function Bookings() {
 
             <div className="flex justify-end gap-2">
               <button type="button" className="btn btn-secondary" onClick={closeInvoice}>Close</button>
-              <button type="button" className="btn btn-primary" onClick={exportInvoicePdf}>Export PDF</button>
+              <button type="button" className="btn btn-primary" onClick={exportInvoicePdf}>Generate Report</button>
             </div>
           </div>
         )}
       </Modal>
 
-      <Modal open={modalOpen} title="New Booking" onClose={() => setModalOpen(false)} width="max-w-5xl">
+      <Modal open={modalOpen} title={editingId ? 'Edit Booking' : 'New Booking'} onClose={() => setModalOpen(false)} width="max-w-5xl">
         <form onSubmit={handleSubmit} className="space-y-5">
           {formError && <p className="rounded bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</p>}
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -713,7 +818,7 @@ export default function Bookings() {
 
           <div className="flex justify-end gap-2 pt-2 border-t border-sand-300">
             <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Create booking</button>
+            <button type="submit" className="btn btn-primary">{editingId ? 'Save changes' : 'Create booking'}</button>
           </div>
         </form>
       </Modal>
