@@ -70,14 +70,12 @@ export default function Users() {
             return
         }
 
-        // Validate full name
         const nameValidation = validateFullName(form.full_name)
         if (!nameValidation.valid) {
             setError(nameValidation.error)
             return
         }
 
-        // Validate email
         const emailValidation = validateEmail(form.email)
         if (!emailValidation.valid) {
             setError(emailValidation.error)

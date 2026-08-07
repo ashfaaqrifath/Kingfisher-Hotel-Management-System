@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { buildChangeSummary, logActivity } from '../lib/activityLog'
 import { validateFullName, validateEmail, validatePhoneNumber } from '../lib/validation'
 import { useAuth } from '../context/AuthContext'
+import { clearRoomMaintenance, scheduleRoomMaintenance } from '../lib/roomMaintenance'
 
 const STATUSES = ['Booked', 'Checked In', 'Checked Out', 'Cancelled']
 const EMPTY = {
@@ -105,6 +106,29 @@ export default function Bookings() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function releaseMaintenanceRooms() {
+      if (cancelled) return
+      const { reconcileMaintenanceRooms } = await import('../lib/roomMaintenance')
+      await reconcileMaintenanceRooms(supabase, { storage: window.localStorage })
+      if (!cancelled) {
+        load()
+      }
+    }
+
+    releaseMaintenanceRooms()
+    const intervalId = window.setInterval(() => {
+      releaseMaintenanceRooms()
+    }, 60 * 1000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
   function openCreate() {
     setForm({ ...EMPTY })
     setEditingId(null)
@@ -175,19 +199,16 @@ export default function Bookings() {
     const guestId = String(form.guest_id || '').trim()
 
     if (!guestId) {
-      // Validate full name
       const nameValidation = validateFullName(form.full_name)
       if (!nameValidation.valid) {
         return nameValidation.error
       }
 
-      // Validate email
       const emailValidation = validateEmail(form.email)
       if (!emailValidation.valid) {
         return emailValidation.error
       }
 
-      // Validate phone
       const phoneValidation = validatePhoneNumber(form.phone)
       if (!phoneValidation.valid) {
         return phoneValidation.error
@@ -205,7 +226,7 @@ export default function Bookings() {
     }
 
     if (!form.room_id) {
-      return 'Please select an available room for this booking.'
+      return 'Please select a room for this booking.'
     }
 
     if (!form.check_in || !form.check_out) {
@@ -228,8 +249,8 @@ export default function Bookings() {
       return 'The selected room could not be found. Please choose another room.'
     }
 
-    if (getDerivedRoomStatus(selectedRoom.id, editingId) !== 'Available') {
-      return 'Please choose a room that is currently available.'
+    if (getDerivedRoomStatus(selectedRoom.id, editingId) === 'Maintenance') {
+      return 'This room is currently under maintenance. Please choose another room.'
     }
 
     const hasConflict = bookings.some((booking) => {
@@ -252,7 +273,7 @@ export default function Bookings() {
     })
 
     if (hasConflict) {
-      return 'This room is already booked for the selected check-in date or stay period. Please choose another room or date.'
+      return 'This room already has a booking during the selected dates. Please choose another room or different dates.'
     }
 
     const discount = Number(form.discount_amount || 0)
@@ -274,6 +295,9 @@ export default function Bookings() {
     const validationMessage = validateBookingForm()
     if (validationMessage) {
       setFormError(validationMessage)
+      if (validationMessage.includes('already has a booking')) {
+        alert(validationMessage)
+      }
       return
     }
 
@@ -367,6 +391,20 @@ export default function Bookings() {
 
     const previousStatus = booking.status || '—'
     await supabase.from('bookings').update({ status }).eq('id', booking.id)
+
+    if (status === 'Checked Out' && booking.room_id) {
+      const roomId = booking.room_id
+      const room = rooms.find((item) => item.id === roomId)
+      if (room) {
+        await supabase.from('rooms').update({ status: 'Maintenance' }).eq('id', roomId)
+        scheduleRoomMaintenance(window.localStorage, roomId)
+      }
+    }
+
+    if (status === 'Checked In' && booking.room_id) {
+      clearRoomMaintenance(window.localStorage, booking.room_id)
+    }
+
     await logActivity(
       `Booking ${status}`,
       `${booking.guests?.full_name || 'Guest'} • Room ${booking.rooms?.room_number || '—'} • ${previousStatus} → ${status}`
@@ -453,9 +491,9 @@ export default function Bookings() {
     return 'Booked'
   }
 
-  const availableRooms = rooms
+  const selectableRooms = rooms
     .map((room) => ({ ...room, derivedStatus: getDerivedRoomStatus(room.id, editingId) }))
-    .filter((room) => room.derivedStatus === 'Available')
+    .filter((room) => room.derivedStatus !== 'Maintenance' || room.id === form.room_id)
 
   const guestSearchResults = guests.filter((guest) => {
     const search = guestSearch.trim().toLowerCase()
@@ -776,11 +814,11 @@ export default function Bookings() {
               </div>
 
               <div>
-                <label className="label">Room (available only)</label>
+                <label className="label">Room</label>
                 <select required className="input" value={form.room_id} onChange={(e) => handleRoomOrDateChange({ room_id: e.target.value })}>
                   <option value="">Select room…</option>
-                  {availableRooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.room_number} — {r.room_type || 'Room'} — LKR {Number(r.price_per_night || 0).toLocaleString()}/night</option>
+                  {selectableRooms.map((r) => (
+                    <option key={r.id} value={r.id}>{r.room_number} — {r.room_type || 'Room'} — {r.derivedStatus} — LKR {Number(r.price_per_night || 0).toLocaleString()}/night</option>
                   ))}
                 </select>
               </div>

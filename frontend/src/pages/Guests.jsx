@@ -46,21 +46,18 @@ export default function Guests() {
     e.preventDefault()
     setError('')
 
-    // Validate full name
     const nameValidation = validateFullName(form.full_name)
     if (!nameValidation.valid) {
       setError(nameValidation.error)
       return
     }
 
-    // Validate email
     const emailValidation = validateEmail(form.email)
     if (!emailValidation.valid) {
       setError(emailValidation.error)
       return
     }
 
-    // Validate phone
     const phoneValidation = validatePhoneNumber(form.phone)
     if (!phoneValidation.valid) {
       setError(phoneValidation.error)

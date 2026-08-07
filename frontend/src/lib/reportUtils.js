@@ -131,7 +131,6 @@ function drawCharts(doc, charts, startY, pageWidth) {
     } else {
       currentY = drawSimpleChart(doc, chart, currentY, pageWidth)
     }
-    // Add extra spacing between charts
     if (index < charts.length - 1) {
       currentY += 8
     }
@@ -147,7 +146,6 @@ export function exportPDF(title, rows, filename = 'report.pdf', options = {}) {
   doc.setFillColor(15, 43, 70)
   doc.rect(0, 0, pageWidth, 24, 'F')
 
-  // Add logo to top left corner (wider size)
   doc.addImage(logoSrc, 'PNG', 2, 1, 28, 15)
 
   doc.setTextColor(255, 255, 255)
@@ -186,11 +184,9 @@ export function exportPDF(title, rows, filename = 'report.pdf', options = {}) {
   doc.setFontSize(7)
   doc.setTextColor(100, 100, 100)
 
-  // Add page break before footer if table extends too far
   const lastTableY = doc.lastAutoTable.finalY || tableStartY
   const footerStartY = Math.max(lastTableY + 20, doc.internal.pageSize.getHeight() - 70)
 
-  // Format footer with full width, limited to 3-4 lines
   const footerLines = doc.splitTextToSize(footerText, pageWidth - 12)
   let yPosition = footerStartY
 

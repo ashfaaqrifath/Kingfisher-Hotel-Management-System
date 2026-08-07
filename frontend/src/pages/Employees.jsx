@@ -38,28 +38,24 @@ export default function Employees() {
     e.preventDefault()
     setError('')
 
-    // Validate full name
     const nameValidation = validateFullName(form.full_name)
     if (!nameValidation.valid) {
       setError(nameValidation.error)
       return
     }
 
-    // Validate email
     const emailValidation = validateEmail(form.email)
     if (!emailValidation.valid) {
       setError(emailValidation.error)
       return
     }
 
-    // Validate phone
     const phoneValidation = validatePhoneNumber(form.phone)
     if (!phoneValidation.valid) {
       setError(phoneValidation.error)
       return
     }
 
-    // Validate salary
     const salaryValidation = validateSalary(form.salary)
     if (!salaryValidation.valid) {
       setError(salaryValidation.error)
