@@ -103,6 +103,7 @@ export default function Guests() {
     <Layout
       title="Manage Guests"
       subtitle="Guest records and contact details"
+      actions={<button className="btn btn-primary" onClick={openCreate}>+ Add Guest</button>}
     >
       <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, email, phone, NIC…">
 
